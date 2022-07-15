@@ -1,0 +1,6 @@
+type: array
+value: "{{ global.array }}"
+properties:
+  number:
+    type: unknown
+    value: "unknown"

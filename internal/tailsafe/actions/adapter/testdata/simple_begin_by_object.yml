@@ -1,0 +1,29 @@
+type: object
+properties:
+  number:
+    type: number
+    value: "{{ test.number }}"
+  string:
+    type: string
+    value: "{{ test.string }}"
+  boolean:
+    type: boolean
+    value: "{{ test.boolean }}"
+  datetime:
+    type: datetime
+    value: "{{ test.datetime }}"
+  sub_object:
+    type: object
+    properties:
+      number:
+        type: number
+        value: "{{ test.number }}"
+      string:
+        type: string
+        value: "{{ test.string }}"
+      boolean:
+        type: boolean
+        value: "{{ test.boolean }}"
+      datetime:
+        type: datetime
+        value: "{{ test.datetime }}"

@@ -1,0 +1,50 @@
+type: array
+value: "{{ global.array }}"
+properties:
+  number:
+    type: number
+    value: "{{ this.number }}"
+  global_number:
+    type: number
+    value: "{{ global.number }}"
+  string:
+    type: string
+    value: "{{ this.string }}"
+  boolean:
+    type: boolean
+    value: "{{ this.boolean }}"
+  datetime:
+    type: datetime
+    value: "{{ this.datetime }}"
+  sub_object:
+    type: object
+    properties:
+      array:
+        type: array
+        value: "{{ global.array }}"
+        properties:
+          number:
+            type: number
+            value: "{{ this.number }}"
+          string:
+            type: string
+            value: "{{ this.string }}"
+          boolean:
+            type: boolean
+            value: "{{ this.boolean }}"
+          datetime:
+            type: datetime
+            value: "{{ this.datetime }}"
+      number:
+        type: number
+        value: "{{ this.number }}"
+      string:
+        type: string
+        value: "{{ global.string }}"
+      boolean:
+        type: boolean
+        value: "{{ global.boolean }}"
+      datetime:
+        type: datetime
+        value: "{{ global.datetime }}"
+        extra: "006"
