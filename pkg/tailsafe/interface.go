@@ -35,11 +35,18 @@ type LoggerPayload interface {
 }
 
 type TemplateInterface interface {
-	GetSteps() []StepInterface
+	NewStep() StepInterface
+
 	GetTitle() string
 	GetDescription() string
 	GetMaintainer() string
 	GetRevision() int
+
+	GetSteps() []StepInterface
+	GetDependencies() []string
+
+	InjectPreStep([]StepInterface)
+	InjectPostStep([]StepInterface)
 }
 
 // StepInterface represents a step in the workflow
@@ -65,6 +72,10 @@ type StepInterface interface {
 	SetContext(context.Context)
 	SetEngine(EngineInterface)
 	SetCurrent(data any)
+
+	SetUse(string) StepInterface
+	SetTitle(string) StepInterface
+	SetData(data any) StepInterface
 }
 
 // ActionInterface represents an action in the workflow
@@ -107,13 +118,15 @@ type EngineInterface interface {
 	ExtractGlobal(required []string) map[string]any
 	SetData(key string, data any)
 
+	SetPath(path string) EngineInterface
+	SetEnv(env string) EngineInterface
+	SetPathData(path string) EngineInterface
+
+	Run()
+
 	/* Mock data process */
 
 	GetMockDataByKey(key string) any
-
-	/* Log process */
-
-	//Log(namespace string, level int, format string, a ...any)
 
 	// NewStage creates a new stage
 	NewStage()

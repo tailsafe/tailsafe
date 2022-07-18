@@ -12,7 +12,7 @@ import (
 
 type Config struct {
 	Command string `yaml:"command"`
-	Dir     string `yaml:"dir"`
+	Path    string `yaml:"path"`
 }
 type ExecAction struct {
 	tailsafe.StepInterface
@@ -41,8 +41,8 @@ func (ex *ExecAction) Execute() tailsafe.ErrActionInterface {
 	cmd := exec.CommandContext(ex.GetContext(), ex.commandSlice[0], ex.commandSlice[1:]...)
 	cmd.Env = os.Environ()
 
-	if ex.Config.Dir != "" {
-		cmd.Dir = ex.Config.Dir
+	if ex.Config.Path != "" {
+		cmd.Dir = ex.Config.Path
 	}
 
 	stdout, err := cmd.StdoutPipe()

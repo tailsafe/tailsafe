@@ -33,55 +33,68 @@ type Template struct {
 }
 
 // GetVersion returns the versions of the template
-func (c Template) GetVersion() string {
-	return c.Version
+func (t Template) GetVersion() string {
+	return t.Version
 }
 
 // GetTitle returns the title of the template
-func (c Template) GetTitle() string {
-	return c.Title
+func (t Template) GetTitle() string {
+	return t.Title
 }
 
 // GetDescription returns the description of the template
-func (c Template) GetDescription() string {
-	return c.Description
+func (t Template) GetDescription() string {
+	return t.Description
 }
 
 // GetRevision returns the revision of the template
-func (c Template) GetRevision() int {
-	return c.Revision
+func (t Template) GetRevision() int {
+	return t.Revision
 }
 
-func (c Template) GetMaintainer() string {
-	return c.Maintainer
+func (t Template) GetMaintainer() string {
+	return t.Maintainer
 }
 
 // GetSteps returns the steps in the template
-func (c Template) GetSteps() []tailsafe.StepInterface {
-	return c.StepInterface
+func (t *Template) GetSteps() []tailsafe.StepInterface {
+	return t.StepInterface
 }
 
 // GetStdOut returns the stdout of the template
-func (c Template) GetStdOut() []string {
-	return c.StdOut
+func (t Template) GetStdOut() []string {
+	return t.StdOut
 }
 
-func (c Template) GetDependencies() []string {
-	return c.getSteps(c.GetSteps())
+func (t Template) GetDependencies() []string {
+	return t.getSteps(t.GetSteps())
 }
 
 // recursive function to get use of all steps
-func (c Template) getSteps(steps []tailsafe.StepInterface) []string {
+func (t *Template) getSteps(steps []tailsafe.StepInterface) []string {
 	var allSteps []string
 	for _, step := range steps {
 		allSteps = append(allSteps, step.GetUse())
-		allSteps = append(allSteps, c.getSteps(step.GetSteps())...)
+		allSteps = append(allSteps, t.getSteps(step.GetSteps())...)
 	}
 	return allSteps
 }
 
+func (t *Template) InjectPreStep(steps []tailsafe.StepInterface) {
+	for _, step := range steps {
+		t.StepInterface = append([]tailsafe.StepInterface{step.(tailsafe.StepInterface)}, t.StepInterface...)
+	}
+}
+
+func (t *Template) InjectPostStep(_ []tailsafe.StepInterface) {
+}
+
+func (t *Template) NewStep() tailsafe.StepInterface {
+	return new(Step)
+}
+
 // SetEnv configure the environment for the template
-func (c Template) SetEnv(args string) (data any, err error) {
+func (t Template) SetEnv(args string) (data any, err error) {
 	split := strings.Split(args, ",")
 	keyValue := make(map[string]any)
 
@@ -98,17 +111,17 @@ func (c Template) SetEnv(args string) (data any, err error) {
 		return
 	}
 
-	for k, f := range c.Args {
+	for k, f := range t.Args {
 		switch f.Type {
 		case "string":
-			c.Args[k].Value = keyValue[f.Name]
+			t.Args[k].Value = keyValue[f.Name]
 		}
 	}
 
 	// check if all required flags are set
 	var argsRequired []string
 	var finalArgs = make(map[string]any)
-	for _, f := range c.Args {
+	for _, f := range t.Args {
 		if !f.Required {
 			continue
 		}
@@ -130,7 +143,7 @@ func (c Template) SetEnv(args string) (data any, err error) {
 
 // Parse parses the template from the given yaml
 func Parse(data []byte) (template any, err error) {
-	tmp := Template{}
+	tmp := new(Template)
 	err = yaml.Unmarshal(data, &tmp)
 	if err != nil {
 		return

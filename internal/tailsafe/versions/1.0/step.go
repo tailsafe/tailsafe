@@ -31,6 +31,16 @@ type Step struct {
 	Current  any
 }
 
+func (s *Step) SetTitle(title string) tailsafe.StepInterface {
+	s.Title = title
+	return s
+}
+
+func (s *Step) SetData(data any) tailsafe.StepInterface {
+	s.Data = data
+	return s
+}
+
 func (s *Step) GetChildLevel() int {
 	return s.Engine.GetChildLevel()
 }
@@ -124,6 +134,11 @@ func (s Step) GetTitle() string {
 // GetUse returns the use for this step.
 func (s Step) GetUse() string {
 	return s.Use
+}
+
+func (s *Step) SetUse(use string) tailsafe.StepInterface {
+	s.Use = use
+	return s
 }
 
 // GetKey returns the key for this step.

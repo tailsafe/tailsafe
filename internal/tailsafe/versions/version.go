@@ -10,13 +10,20 @@ import (
 type TemplateInterface interface {
 	/* Getters */
 
-	GetSteps() []tailsafe.StepInterface
 	GetTitle() string
 	GetDescription() string
 	GetMaintainer() string
 	GetRevision() int
-	GetStdOut() []string
+
+	GetSteps() []tailsafe.StepInterface
 	GetDependencies() []string
+
+	GetStdOut() []string
+
+	NewStep() tailsafe.StepInterface
+
+	InjectPreStep([]tailsafe.StepInterface)
+	InjectPostStep([]tailsafe.StepInterface)
 
 	/* Setters */
 

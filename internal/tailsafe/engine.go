@@ -2,6 +2,7 @@ package tailsafe
 
 import (
 	"context"
+	_ "embed"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -29,7 +30,6 @@ type Engine struct {
 	path     string
 	pathData string
 	env      string
-	// verbose  bool
 
 	// data processing
 	data     map[string]interface{}
@@ -123,19 +123,19 @@ func New() tailsafe.EngineInterface {
 }
 
 // SetPath sets the path of the payload
-func (e *Engine) SetPath(path string) *Engine {
+func (e *Engine) SetPath(path string) tailsafe.EngineInterface {
 	e.path = path
 	return e
 }
 
 // SetPathData sets the path of the payload
-func (e *Engine) SetPathData(path string) *Engine {
+func (e *Engine) SetPathData(path string) tailsafe.EngineInterface {
 	e.pathData = path
 	return e
 }
 
 // SetEnv sets the path of the payload
-func (e *Engine) SetEnv(env string) *Engine {
+func (e *Engine) SetEnv(env string) tailsafe.EngineInterface {
 	e.env = env
 	return e
 }
@@ -250,26 +250,33 @@ func (e *Engine) Run() {
 	// Get dependencies
 	requires := e.template.GetDependencies()
 	for _, require := range requires {
+		// not use autoload because is already compiled with engine.
 		if strings.HasPrefix(require, "internal") {
-			// not use autoload
 			continue
 		}
+		// add compile task
 		if strings.HasPrefix(require, "/") {
-			// add testing [DEV]
-			log.Print("need add build")
+			split := strings.Split(require, "/")
+			name := split[len(split)-1]
+
+			step := e.template.NewStep()
+			step.SetUse("internal/exec")
+			step.SetTitle("[DEV] Build Action")
+			step.SetData(map[string]interface{}{"command": fmt.Sprintf("go build -buildmode=plugin -o %s/%s@dev.so .", modules.GetUtilsModule().GetAppActionDir(), name), "path": require})
+
+			e.template.InjectPreStep([]tailsafe.StepInterface{step})
 			continue
 		}
-
 		// testing found *.so plugins
-		split := strings.Split(require, "@")
+		/*	split := strings.Split(require, "@")
 
-		packageName := split[0]
-		version := "latest"
-		if len(split) > 1 {
-			version = split[1]
-		}
+			packageName := split[0]
+			version := "latest"
+			if len(split) > 1 {
+				version = split[1]
+			}*/
 
-		log.Print(packageName, version)
+		// log.Print(packageName, version)
 	}
 
 	// Validate arguments
