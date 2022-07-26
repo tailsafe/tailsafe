@@ -115,7 +115,7 @@ func init() {
 			if last != e.GetStep().GetKey() {
 				modules.
 					GetLoggerModule().
-					Log(logger.NewPayload().SetNamespace(tailsafeInterface.NAMESPACE_WORKFLOW).SetLevel(e.GetStep().GetLogLevel()).SetMessage(modules.GetUtilsModule().Indent("\n \u001B[33m>>> Stdout from `%s`\u001B[0m", e.GetIntValue())).SetArgs(e.GetStep().GetTitle()))
+					Log(logger.NewPayload().SetNamespace(tailsafeInterface.NAMESPACE_DEFAULT).SetLevel(e.GetStep().GetLogLevel()).SetMessage(modules.GetUtilsModule().Indent("\n \u001B[33m>>> Stdout from `%s`\u001B[0m", e.GetIntValue())).SetArgs(e.GetStep().GetTitle()))
 
 				last = e.GetStep().GetKey()
 			}

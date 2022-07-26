@@ -8,7 +8,7 @@ import (
 )
 
 var workflow bool
-var path string
+var use string
 var env string
 var verbose bool
 var data string
@@ -16,9 +16,9 @@ var data string
 func main() {
 
 	flag.BoolVar(&verbose, "v", false, "Show more information")
-	flag.BoolVar(&workflow, "workflow", false, "Show the workflow")
+	flag.BoolVar(&workflow, "workflow", false, "Show the processing workflow")
 	flag.StringVar(&data, "data", "", "Set specific data path name")
-	flag.StringVar(&path, "path", "", "Set config path name")
+	flag.StringVar(&use, "use", "", "Set use path name")
 	flag.StringVar(&env, "env", "", "environment arguments")
 	flag.Parse()
 
@@ -39,7 +39,7 @@ func main() {
 	// Create tailsafe-cli instance and run !
 	tailsafe.
 		New().
-		SetPath(path).
+		SetPath(use).
 		SetEnv(env).
 		SetPathData(data).
 		Run()

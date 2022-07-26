@@ -16,7 +16,7 @@ type Config struct {
 type Replace struct {
 	tailsafe.StepInterface
 	Config  *Config
-	_Global map[string]interface{}
+	_Global tailsafe.DataInterface
 	_Data   []map[string]interface{}
 }
 
@@ -24,32 +24,29 @@ func (r *Replace) Configure() (err tailsafe.ErrActionInterface) {
 	return
 }
 
-func (r *Replace) GetData() any {
+func (r *Replace) GetResult() any {
 	return nil
 }
 
 func (r *Replace) Execute() (err tailsafe.ErrActionInterface) {
-	_, ok := r._Global["current"].(map[string]interface{})
+	_, ok := r.Data().(map[string]interface{})
 	if !ok {
 		return
 	}
 	for _, rule := range r.Config.Rules {
 		var re = regexp.MustCompile(`(?m)^.+`)
-		var str = fmt.Sprintf("%v", r._Global["current"].(map[string]interface{})[rule.Key])
-		r._Global["current"].(map[string]interface{})[rule.Key] = re.ReplaceAllString(str, rule.New)
+		var str = fmt.Sprintf("%v", r.Data().(map[string]interface{})[rule.Key])
+		r.Data().(map[string]interface{})[rule.Key] = re.ReplaceAllString(str, rule.New)
 	}
 	return
 }
 func (r *Replace) Data() interface{} {
-	return r._Global["current"]
+	return r._Global.Get("current")
 }
 func (r *Replace) GetConfig() interface{} {
 	return &Config{}
 }
-func (r *Replace) SetConfig(config interface{}) {
-	r.Config = config.(*Config)
-}
-func (r *Replace) SetGlobal(data map[string]interface{}) {
+func (r *Replace) SetPayload(data tailsafe.DataInterface) {
 	r._Global = data
 }
 func New(step tailsafe.StepInterface) tailsafe.ActionInterface {

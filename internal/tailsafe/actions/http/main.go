@@ -24,7 +24,7 @@ type HttpAction struct {
 	tailsafe.StepInterface
 	Config *Config
 
-	global map[string]interface{}
+	global tailsafe.DataInterface
 	data   map[string]interface{}
 }
 
@@ -83,7 +83,7 @@ func (r *HttpAction) Execute() (err tailsafe.ErrActionInterface) {
 	}
 	return
 }
-func (r *HttpAction) GetData() interface{} {
+func (r *HttpAction) GetResult() interface{} {
 	return r.data
 }
 func (r *HttpAction) GetConfig() interface{} {
@@ -95,7 +95,7 @@ func (r *HttpAction) GetConfig() interface{} {
 func (r *HttpAction) SetConfig(config interface{}) {
 	r.Config = config.(*Config)
 }
-func (r *HttpAction) SetGlobal(data map[string]interface{}) {
+func (r *HttpAction) SetPayload(data tailsafe.DataInterface) {
 	// set global data
 	r.global = data
 

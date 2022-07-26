@@ -9,8 +9,10 @@ import (
 	"github.com/tailsafe/tailsafe/internal/tailsafe/modules"
 	"github.com/tailsafe/tailsafe/pkg/tailsafe"
 	"github.com/tidwall/gjson"
+	"os"
 	"regexp"
 	"strings"
+	"sync"
 )
 
 // Step represents a single action.
@@ -18,17 +20,30 @@ import (
 // Use indicates the name of the action to be used to perform the process
 type Step struct {
 	context.Context
+	sync.Mutex
+
 	Engine   tailsafe.EngineInterface
-	Title    string                   `yaml:"title"`
-	Use      string                   `yaml:"use"`
-	LogLevel string                   `yaml:"log-level"`
-	Data     any                      `yaml:"data"`
-	Key      string                   `yaml:"key"`
-	Needs    []string                 `yaml:"needs"`
-	Steps    []tailsafe.StepInterface `yaml:"steps"`
-	Async    bool                     `yaml:"async"`
-	Wait     []string                 `yaml:"wait"`
-	Current  any
+	Title    string   `yaml:"title"`
+	Use      string   `yaml:"use"`
+	LogLevel string   `yaml:"log-level"`
+	Data     any      `yaml:"data"`
+	Key      string   `yaml:"key"`
+	Needs    []string `yaml:"needs"`
+
+	StepsGeneric []tailsafe.StepInterface
+	Steps        []*Step `yaml:"steps"`
+
+	StepsSuccessGeneric []tailsafe.StepInterface
+	StepsSuccess        []*Step `yaml:"if-action-success"`
+
+	StepsFailGeneric []tailsafe.StepInterface
+	StepsFail        []*Step `yaml:"if-action-fail"`
+
+	Async   bool     `yaml:"async"`
+	Wait    []string `yaml:"wait"`
+	Payload tailsafe.DataInterface
+
+	NextIsAlreadyCalled bool
 }
 
 func (s *Step) SetTitle(title string) tailsafe.StepInterface {
@@ -96,13 +111,33 @@ func (s *Step) SetContext(ctx context.Context) {
 func (s *Step) GetContext() context.Context {
 	return s.Context
 }
-func (s *Step) Next() tailsafe.ErrActionInterface {
+func (s *Step) Next(payload tailsafe.DataInterface) tailsafe.ErrActionInterface {
+	return s._Next(payload, nil)
+}
+func (s *Step) _Next(payload tailsafe.DataInterface, err error) tailsafe.ErrActionInterface {
 	s.Engine.EntrySubStage()
-	defer s.Engine.ExitSubStage()
+	defer func() {
+		s.Engine.ExitSubStage()
+		s.NextIsAlreadyCalled = true
+	}()
+	var steps []tailsafe.StepInterface
 
-	for _, sub := range s.GetSteps() {
+	if err != nil && len(s.GetFailSteps()) == 0 {
+		return err.(tailsafe.ErrActionInterface)
+	}
+
+	if err != nil && len(s.GetFailSteps()) != 0 {
+		steps = s.GetFailSteps()
+	}
+
+	if err == nil && len(s.GetSuccessSteps()) != 0 {
+		steps = s.GetSuccessSteps()
+	}
+
+	for _, sub := range steps {
+
 		sub.SetContext(s.Context)
-		sub.SetCurrent(s.Current)
+		sub.SetPayload(payload)
 		sub.SetEngine(s.Engine)
 
 		err := sub.Call()
@@ -117,23 +152,50 @@ func (s *Step) Plugin() tailsafe.ActionInterface {
 	return nil
 }
 
-func (s *Step) SetCurrent(data interface{}) {
-	s.Current = data
+func (s *Step) SetPayload(data tailsafe.DataInterface) {
+	s.Payload = data
+}
+
+func (s *Step) GetPayload() tailsafe.DataInterface {
+	return s.Payload
 }
 
 // GetSteps returns the steps for this step.
-func (s Step) GetSteps() []tailsafe.StepInterface {
-	return s.Steps
+func (s *Step) GetSteps() []tailsafe.StepInterface {
+	if len(s.StepsGeneric) == 0 {
+		for _, test := range s.Steps {
+			s.StepsGeneric = append(s.StepsGeneric, test)
+		}
+	}
+	return s.StepsGeneric
+}
+
+func (s *Step) GetSuccessSteps() []tailsafe.StepInterface {
+	if len(s.StepsSuccessGeneric) == 0 {
+		for _, step := range s.StepsSuccess {
+			s.StepsSuccessGeneric = append(s.StepsSuccessGeneric, step)
+		}
+	}
+	return s.StepsSuccessGeneric
+}
+
+func (s *Step) GetFailSteps() []tailsafe.StepInterface {
+	if len(s.StepsFailGeneric) == 0 {
+		for _, step := range s.StepsFail {
+			s.StepsFailGeneric = append(s.StepsFailGeneric, step)
+		}
+	}
+	return s.StepsFailGeneric
 }
 
 // GetTitle returns the title for this step.
-func (s Step) GetTitle() string {
+func (s *Step) GetTitle() string {
 	return s.Title
 }
 
 // GetUse returns the use for this step.
-func (s Step) GetUse() string {
-	return s.Use
+func (s *Step) GetUse() string {
+	return strings.ReplaceAll(s.Use, "~", os.Getenv("HOME"))
 }
 
 func (s *Step) SetUse(use string) tailsafe.StepInterface {
@@ -142,22 +204,19 @@ func (s *Step) SetUse(use string) tailsafe.StepInterface {
 }
 
 // GetKey returns the key for this step.
-func (s Step) GetKey() string {
+func (s *Step) GetKey() string {
 	var re = regexp.MustCompile(`(?m)%(.*)%`)
 	res := re.FindAllStringSubmatch(s.Key, -1)
 	for _, v := range res {
-		data, ok := s.Current.(map[string]interface{})
-		if ok {
-			s.Key = strings.ReplaceAll(s.Key, v[0], fmt.Sprintf("%v", data[v[1]]))
-		}
+		s.Key = strings.ReplaceAll(s.Key, v[0], fmt.Sprintf("%v", s.Payload.Get(v[1])))
 	}
 	return strings.TrimSpace(s.Key)
 }
-func (s Step) GetData() interface{} {
+func (s *Step) GetData() interface{} {
 	return s.Data
 }
 
-func (s Step) Begin() tailsafe.StageMonitoringInterface {
+func (s *Step) Begin() tailsafe.StageMonitoringInterface {
 	// increment the stage
 	s.Engine.NewStage()
 	// return the stage monitor
@@ -167,7 +226,6 @@ func (s Step) Begin() tailsafe.StageMonitoringInterface {
 func (s *Step) Call() (err error) {
 	// Begin monitoring the stage
 	stageMonitoring := s.Begin()
-
 	stageLevel := s.Engine.GetChildLevel()
 
 	defer func() {
@@ -187,6 +245,10 @@ func (s *Step) Call() (err error) {
 	}
 
 	modules.Get[tailsafe.EventsInterface]("Events").Trigger(tailsafe.NewActionBeforeConfigureStepEvent(s))
+
+	if s.Payload == nil {
+		s.Payload = tailsafe.NewPayload()
+	}
 
 	// only set the key if it is not empty
 	if s.GetKey() != "" {
@@ -212,22 +274,23 @@ func (s *Step) Call() (err error) {
 	}
 
 	tmp := action.GetConfig()
+
 	err = json.Unmarshal(out, &tmp)
 	if err != nil {
 		return
 	}
 
 	// Set the config into the action
-	action.SetConfig(tmp)
+	// action.SetConfig(tmp)
 
-	// extract global with need!
-	extractGlobal := s.Engine.ExtractGlobal(s.Needs)
+	/*	// extract global with need!
+		extractGlobal := s.Engine.ExtractGlobal(s.Needs)
 
-	// set current with each context
-	extractGlobal["current"] = s.Current
+		// set current with each context
+		extractGlobal["current"] = s.Payload*/
 
 	// inject into action
-	action.SetGlobal(extractGlobal)
+	action.SetPayload(s.GetPayload())
 
 	// configure the action
 	err = action.Configure()
@@ -241,7 +304,6 @@ func (s *Step) Call() (err error) {
 	mock := s.Engine.GetMockDataByKey(s.GetKey())
 	if mock != nil {
 		s.Engine.SetData(s.GetKey(), mock)
-		//s.Engine.Log(tailsafe.NAMESPACE_WORKFLOW, tailsafe.LOG_VERBOSE, " ↳ Uses mock data : %v", s.Engine.Pretty(mock))
 		return
 	}
 
@@ -258,17 +320,22 @@ func (s *Step) Call() (err error) {
 
 		// if store key is defined, store the value
 		if s.GetKey() != "" {
-			data := action.GetData()
+			result := action.GetResult()
 			// if not null, saving !
-			if data != nil {
+			if result != nil {
 				// secure key name
 				reservedKey := []string{"args"}
 				if strings.Contains(strings.Join(reservedKey, " "), s.GetKey()) {
 					return fmt.Errorf("key `%s` is reserved from the system [%s]", s.GetKey(), strings.Join(reservedKey, ", "))
 				}
 
-				s.Engine.SetData(s.GetKey(), data)
-				modules.Get[tailsafe.EventsInterface]("Events").Trigger(tailsafe.NewActionHasStoringDataEvent(s, data))
+				// Set global data
+				s.Engine.SetData(s.GetKey(), result)
+
+				// Set payload state data
+				s.GetPayload().Set(s.GetKey(), result)
+
+				modules.Get[tailsafe.EventsInterface]("Events").Trigger(tailsafe.NewActionHasStoringDataEvent(s, result))
 			}
 		}
 
@@ -290,5 +357,5 @@ func (s *Step) Call() (err error) {
 		return
 	}
 
-	return payload()
+	return s._Next(s.GetPayload(), payload())
 }

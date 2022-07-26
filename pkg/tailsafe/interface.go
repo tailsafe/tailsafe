@@ -60,10 +60,15 @@ type StepInterface interface {
 	GetLogLevel() int
 	GetChildLevel() int
 	GetWait() []string
+
 	GetSteps() []StepInterface
+	GetSuccessSteps() []StepInterface
+	GetFailSteps() []StepInterface
+
 	GetEngine() EngineInterface
 	GetContext() context.Context
-	Next() (err ErrActionInterface)
+	GetPayload() DataInterface
+	Next(payload DataInterface) ErrActionInterface
 	Resolve(path string, data any) any
 	IsAsync() bool
 
@@ -71,7 +76,7 @@ type StepInterface interface {
 
 	SetContext(context.Context)
 	SetEngine(EngineInterface)
-	SetCurrent(data any)
+	SetPayload(DataInterface)
 
 	SetUse(string) StepInterface
 	SetTitle(string) StepInterface
@@ -86,25 +91,24 @@ type ActionInterface interface {
 	// Execute the action
 	Execute() (err ErrActionInterface)
 
-	/* Setters */
-
-	// SetConfig sets the configuration for the action
-	SetConfig(any)
-	SetGlobal(data map[string]interface{})
-
-	/* Getters */
+	// SetPayload sets the payload for the action
+	SetPayload(DataInterface)
 
 	// GetConfig returns the configuration for the action
 	GetConfig() any
-	GetData() any
+
+	// GetResult returns the result for the action
+	GetResult() any
 }
 
 type EventsInterface interface {
 	Trigger(event EventInterface)
 }
+
 type Utils interface {
 	Pretty(v any, level int) any
 }
+
 type Event interface {
 	SetBody(...any)
 	SetKey(string)
@@ -124,7 +128,7 @@ type EngineInterface interface {
 
 	Run()
 
-	/* Mock data process */
+	/* Mock payload process */
 
 	GetMockDataByKey(key string) any
 
@@ -216,7 +220,7 @@ func (e ErrAction) GetStackTrace() string {
 	return e.trace
 }
 
-// Error returns the error message with more data
+// Error returns the error message with more payload
 func (e ErrAction) Error() string {
 	return fmt.Sprintf("`%s` was triggered by %s:%d from %s", e.original.Error(), e.caller, e.line, e.file)
 }
@@ -244,4 +248,10 @@ func CatchStackTrace(_ context.Context, err error) ErrAction {
 	}
 
 	return est
+}
+
+type DataInterface interface {
+	Set(key string, value any)
+	Get(key string) any
+	GetAll() map[string]any
 }

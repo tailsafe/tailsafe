@@ -15,7 +15,7 @@ type AdapterAction struct {
 	tailsafe.StepInterface
 	Config any
 
-	global map[string]interface{}
+	global tailsafe.DataInterface
 	data   any
 	sync.Mutex
 }
@@ -24,6 +24,7 @@ type ObjectType struct {
 	Type       string
 	Value      any
 	Extra      any
+	Nullable   bool
 	Properties map[string]interface{}
 }
 
@@ -36,8 +37,8 @@ func New(step tailsafe.StepInterface) tailsafe.ActionInterface {
 
 /* Generic Getters */
 
-// GetData returns the data for the action
-func (ta *AdapterAction) GetData() interface{} {
+// GetResult returns the data for the action
+func (ta *AdapterAction) GetResult() interface{} {
 	return ta.data
 }
 
@@ -49,18 +50,8 @@ func (ta *AdapterAction) GetConfig() interface{} {
 	return ta.Config
 }
 
-/* Generics setters */
-
-// SetConfig sets the configuration for the action
-func (ta *AdapterAction) SetConfig(config any) {
-	if config == nil {
-		return
-	}
-	ta.Config = config
-}
-
 // SetGlobal sets the global data for the action
-func (ta *AdapterAction) SetGlobal(data map[string]interface{}) {
+func (ta *AdapterAction) SetGlobal(data tailsafe.DataInterface) {
 	ta.global = data
 }
 
@@ -78,7 +69,8 @@ func (ta *AdapterAction) SetInternalGlobal(key string, data any) {
 	ta.Lock()
 	defer ta.Unlock()
 
-	ta.global[key] = data
+	// ta.global[key] = data
+	ta.global.Set(key, data)
 	return
 }
 
@@ -86,7 +78,7 @@ func (ta *AdapterAction) GetInternalGlobal(key string) any {
 	ta.Lock()
 	defer ta.Unlock()
 
-	return ta.global[key]
+	return ta.global.Get(key)
 }
 
 func (ta *AdapterAction) parse(data any) tailsafe.ErrActionInterface {
@@ -155,7 +147,11 @@ func (ta *AdapterAction) parseProperties(properties map[string]interface{}, dst 
 			ta.Unlock()
 		case "string":
 			ta.Lock()
-			dst[k] = fmt.Sprintf("%v", ta.Resolve(fmt.Sprintf("%v", obj.Value), ta.global))
+			value := ta.Resolve(fmt.Sprintf("%v", obj.Value), ta.global.GetAll())
+			if value == nil && !obj.Nullable {
+				return tailsafe.CatchStackTrace(ta.GetContext(), fmt.Errorf("could not resolve %v", obj.Value))
+			}
+			dst[k] = fmt.Sprintf("%v", value)
 			ta.Unlock()
 		case "number":
 			value := ta.Resolve(fmt.Sprintf("%v", obj.Value), ta.global)

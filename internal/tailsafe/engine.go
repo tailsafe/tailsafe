@@ -167,6 +167,11 @@ func (e *Engine) GetMockData() map[string]interface{} {
 
 // Parse checks if the payload is valid
 func (e *Engine) Parse() (err error) {
+	newPath := fmt.Sprintf("%s/%s.yml", modules.GetUtilsModule().GetAppTemplateDir(), e.GetPath())
+	if _, err := os.Stat(newPath); err == nil {
+		e.SetPath(newPath)
+	}
+
 	var data []byte
 	data, err = os.ReadFile(e.GetPath())
 	if err != nil {
@@ -255,9 +260,12 @@ func (e *Engine) Run() {
 			continue
 		}
 		// add compile task
-		if strings.HasPrefix(require, "/") {
+		if _, err := os.Stat(require); !os.IsNotExist(err) {
 			split := strings.Split(require, "/")
 			name := split[len(split)-1]
+
+			//_ = os.Setenv("GOOS", runtime.GOOS)
+			//_ = os.Setenv("GOARCH", runtime.GOARCH)
 
 			step := e.template.NewStep()
 			step.SetUse("internal/exec")

@@ -14,7 +14,7 @@ type TemplateAction struct {
 	tailsafe.StepInterface
 	Config *Config
 
-	global map[string]interface{}
+	global tailsafe.DataInterface
 	data   string
 }
 
@@ -36,7 +36,7 @@ func (ta *TemplateAction) Execute() (err tailsafe.ErrActionInterface) {
 	ta.data = tpl.String()
 	return
 }
-func (ta *TemplateAction) GetData() interface{} {
+func (ta *TemplateAction) GetResult() interface{} {
 	return ta.data
 }
 func (ta *TemplateAction) GetConfig() interface{} {
@@ -45,10 +45,7 @@ func (ta *TemplateAction) GetConfig() interface{} {
 	}
 	return ta.Config
 }
-func (ta *TemplateAction) SetConfig(config interface{}) {
-	ta.Config = config.(*Config)
-}
-func (ta *TemplateAction) SetGlobal(data map[string]interface{}) {
+func (ta *TemplateAction) SetPayload(data tailsafe.DataInterface) {
 	ta.global = data
 }
 func New(step tailsafe.StepInterface) tailsafe.ActionInterface {

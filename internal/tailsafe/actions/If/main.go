@@ -16,7 +16,7 @@ type Rule struct {
 type If struct {
 	tailsafe.StepInterface
 	Config  *Config
-	_Global map[string]interface{}
+	_Global tailsafe.DataInterface
 	_Data   any
 }
 
@@ -28,9 +28,7 @@ func (r *If) GetData() any {
 	return nil
 }
 
-// Execute
-// @toDo: add support for multiple rules
-// @toDo: extract treatement of rules to a separate function
+// Execute executes the action
 func (r *If) Execute() tailsafe.ErrActionInterface {
 	isContinue := true
 	for _, rule := range r.Config.Rules {
@@ -77,22 +75,16 @@ func (r *If) Execute() tailsafe.ErrActionInterface {
 		return tailsafe.CatchStackTrace(r.GetContext(), &tailsafe.ErrContinue{Message: "continue"})
 	}
 	// if it matches, we keep the data
-	r._Data = r._Global["current"]
+	r._Data = r._Global.Get("current")
 	return nil
 }
-func (r *If) Data() interface{} {
+func (r *If) GetResult() interface{} {
 	return r._Data
 }
 func (r *If) GetConfig() interface{} {
 	return &Config{}
 }
-func (r *If) SetConfig(config interface{}) {
-	if config == nil {
-		return
-	}
-	r.Config = config.(*Config)
-}
-func (r *If) SetGlobal(data map[string]interface{}) {
+func (r *If) SetGlobal(data tailsafe.DataInterface) {
 	r._Global = data
 }
 func New(step tailsafe.StepInterface) tailsafe.ActionInterface {

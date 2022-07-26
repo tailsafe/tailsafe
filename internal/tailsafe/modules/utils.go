@@ -8,8 +8,9 @@ import (
 )
 
 type Utils struct {
-	appDir       string
-	appDirAction string
+	appDir         string
+	appDirAction   string
+	appDirTemplate string
 }
 
 var UtilsInstance *Utils
@@ -24,6 +25,7 @@ func init() {
 
 	UtilsInstance.appDir = filepath.Join(home, ".tailsafe")
 	UtilsInstance.appDirAction = filepath.Join(home, ".tailsafe", "actions")
+	UtilsInstance.appDirTemplate = filepath.Join(home, ".tailsafe", "template")
 
 	err = os.MkdirAll(UtilsInstance.appDir, os.ModePerm)
 	if err != nil {
@@ -35,6 +37,10 @@ func init() {
 		log.Fatalln(err)
 	}
 
+	err = os.MkdirAll(UtilsInstance.appDirTemplate, os.ModePerm)
+	if err != nil {
+		log.Fatalln(err)
+	}
 }
 
 func GetUtilsModule() *Utils {
@@ -67,4 +73,8 @@ func (e *Utils) GetAppDir() string {
 
 func (e *Utils) GetAppActionDir() string {
 	return e.appDir
+}
+
+func (e *Utils) GetAppTemplateDir() string {
+	return e.appDirTemplate
 }

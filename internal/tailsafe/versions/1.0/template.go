@@ -28,8 +28,8 @@ type Template struct {
 	} `json:"args"`
 
 	// Steps are the steps in the template
-	StepInterface []tailsafe.StepInterface
-	Steps         []*Step `yaml:"steps"`
+	StepsGeneric []tailsafe.StepInterface
+	Steps        []*Step `yaml:"steps"`
 }
 
 // GetVersion returns the versions of the template
@@ -58,7 +58,7 @@ func (t Template) GetMaintainer() string {
 
 // GetSteps returns the steps in the template
 func (t *Template) GetSteps() []tailsafe.StepInterface {
-	return t.StepInterface
+	return t.StepsGeneric
 }
 
 // GetStdOut returns the stdout of the template
@@ -82,7 +82,7 @@ func (t *Template) getSteps(steps []tailsafe.StepInterface) []string {
 
 func (t *Template) InjectPreStep(steps []tailsafe.StepInterface) {
 	for _, step := range steps {
-		t.StepInterface = append([]tailsafe.StepInterface{step.(tailsafe.StepInterface)}, t.StepInterface...)
+		t.StepsGeneric = append([]tailsafe.StepInterface{step.(tailsafe.StepInterface)}, t.StepsGeneric...)
 	}
 }
 
@@ -149,9 +149,10 @@ func Parse(data []byte) (template any, err error) {
 		return
 	}
 
-	for _, test := range tmp.Steps {
-		tmp.StepInterface = append(tmp.StepInterface, test)
+	for _, step := range tmp.Steps {
+		tmp.StepsGeneric = append(tmp.StepsGeneric, step)
 	}
+
 	// force template type
 	template = tmp
 	return

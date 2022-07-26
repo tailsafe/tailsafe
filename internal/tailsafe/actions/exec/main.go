@@ -18,7 +18,7 @@ type ExecAction struct {
 	tailsafe.StepInterface
 	Config *Config
 
-	global       map[string]interface{}
+	global       tailsafe.DataInterface
 	data         string
 	commandSlice []string
 }
@@ -46,12 +46,26 @@ func (ex *ExecAction) Execute() tailsafe.ErrActionInterface {
 	}
 
 	stdout, err := cmd.StdoutPipe()
-	rd := bufio.NewReader(stdout)
+	rOut := bufio.NewReader(stdout)
 
 	go func() {
 		indentLevel := ex.GetChildLevel()
 		for {
-			str, err := rd.ReadString('\n')
+			str, err := rOut.ReadString('\n')
+			if err != nil {
+				break
+			}
+			modules.GetEventsModule().Trigger(tailsafe.NewActionStdoutEvent(ex.StepInterface, str, indentLevel))
+		}
+	}()
+
+	stdErr, err := cmd.StderrPipe()
+	rErr := bufio.NewReader(stdErr)
+
+	go func() {
+		indentLevel := ex.GetChildLevel()
+		for {
+			str, err := rErr.ReadString('\n')
 			if err != nil {
 				break
 			}
@@ -66,19 +80,16 @@ func (ex *ExecAction) Execute() tailsafe.ErrActionInterface {
 	}
 	return nil
 }
-func (ex *ExecAction) GetData() interface{} {
+func (ex *ExecAction) GetResult() interface{} {
 	return ex.data
 }
 func (ex *ExecAction) GetConfig() interface{} {
 	if ex.Config == nil {
-		return &Config{}
+		ex.Config = &Config{}
 	}
 	return ex.Config
 }
-func (ex *ExecAction) SetConfig(config interface{}) {
-	ex.Config = config.(*Config)
-}
-func (ex *ExecAction) SetGlobal(data map[string]interface{}) {
+func (ex *ExecAction) SetPayload(data tailsafe.DataInterface) {
 	ex.global = data
 }
 func New(step tailsafe.StepInterface) tailsafe.ActionInterface {

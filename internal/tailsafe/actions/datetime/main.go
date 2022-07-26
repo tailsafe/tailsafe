@@ -17,7 +17,7 @@ type Config struct {
 type DateTime struct {
 	tailsafe.StepInterface
 	Config  *Config
-	_Global map[string]interface{}
+	_Global tailsafe.DataInterface
 	_Data   string
 }
 
@@ -25,7 +25,7 @@ func (r *DateTime) Configure() (err tailsafe.ErrActionInterface) {
 	return
 }
 
-func (r *DateTime) GetData() any {
+func (r *DateTime) GetResult() any {
 	return nil
 }
 
@@ -39,16 +39,13 @@ func (r *DateTime) Execute() (err tailsafe.ErrActionInterface) {
 	}
 	return
 }
-func (r *DateTime) Data() interface{} {
-	return r._Data
-}
 func (r *DateTime) GetConfig() interface{} {
 	return &Config{}
 }
 func (r *DateTime) SetConfig(config interface{}) {
 	r.Config = config.(*Config)
 }
-func (r *DateTime) SetGlobal(data map[string]interface{}) {
+func (r *DateTime) SetPayload(data tailsafe.DataInterface) {
 	r._Global = data
 }
 func New(step tailsafe.StepInterface) tailsafe.ActionInterface {

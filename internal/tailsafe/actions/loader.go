@@ -8,17 +8,19 @@ import (
 	execAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/exec"
 	httpAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/http"
 	"github.com/tailsafe/tailsafe/internal/tailsafe/actions/loop"
+	payloadAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/payload"
 	"github.com/tailsafe/tailsafe/internal/tailsafe/actions/replace"
 	templateAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/template"
 	"github.com/tailsafe/tailsafe/internal/tailsafe/modules"
 	"github.com/tailsafe/tailsafe/pkg/tailsafe"
 	"log"
-	"os"
 	"plugin"
 	"strings"
+	"sync"
 )
 
 type Actions struct {
+	sync.Mutex
 	data map[string]func(runtime tailsafe.StepInterface) tailsafe.ActionInterface
 }
 
@@ -34,6 +36,8 @@ func init() {
 	// Only internals packages of Golang for the internal actions.
 	// @todo: add a way to add autoload of external actions.
 
+	instance.Lock()
+	defer instance.Unlock()
 	instance.data["internal/for"] = loop.New
 	instance.data["internal/if"] = If.New
 	instance.data["internal/datetime"] = datetime.New
@@ -42,47 +46,39 @@ func init() {
 	instance.data["internal/template"] = templateAction.New
 	instance.data["internal/adapter"] = adapterAction.New
 	instance.data["internal/exec"] = execAction.New
+	instance.data["internal/payload"] = payloadAction.New
 }
 func Get(name string) (action func(runtime tailsafe.StepInterface) tailsafe.ActionInterface, err error) {
-	// if internal action
-	if strings.HasPrefix(name, "internal/") {
-		return _GetInternal(name)
-	}
 	// if dev action
-	if strings.HasPrefix(name, "/") {
+	if strings.HasPrefix(name, "/") && instance.data[name] == nil {
 		split := strings.Split(name, "/")
-		name := fmt.Sprintf("%s@dev.so", split[len(split)-1])
+		pluginName := fmt.Sprintf("%s@dev.so", split[len(split)-1])
 
-		log.Print("[DEV] Build Action: ", name)
-
-		log.Print(modules.GetUtilsModule().GetAppActionDir())
-
-		pp, err := plugin.Open(fmt.Sprintf("%s/%s", modules.GetUtilsModule().GetAppActionDir(), name))
+		var pp *plugin.Plugin
+		pp, err = plugin.Open(fmt.Sprintf("%s/%s", modules.GetUtilsModule().GetAppActionDir(), pluginName))
 		if err != nil {
 			log.Fatalln(err)
 		}
 
-		pl, err := pp.Lookup("New")
+		var pl plugin.Symbol
+		pl, err = pp.Lookup("New")
 		if err != nil {
 			log.Fatalln(err)
 		}
 
-		c := pl.(func(runtime tailsafe.StepInterface) tailsafe.ActionInterface)
+		action = pl.(func(runtime tailsafe.StepInterface) tailsafe.ActionInterface)
 
-		log.Print(c)
+		instance.Lock()
+		instance.data[name] = action
+		instance.Unlock()
 	}
-
-	os.Exit(1)
-	/*	var ok bool
-		action, ok = instance.data[name]
-		if !ok {
-			err = &tailsafe.ErrActionNotFound{Name: name}
-			return
-		}*/
-	return
+	return _GetInternal(name)
 }
 
 func _GetInternal(name string) (action func(runtime tailsafe.StepInterface) tailsafe.ActionInterface, err error) {
+	instance.Lock()
+	defer instance.Unlock()
+
 	var ok bool
 	action, ok = instance.data[name]
 	if !ok {

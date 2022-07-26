@@ -11,7 +11,7 @@ type Config struct {
 type Loop struct {
 	tailsafe.StepInterface
 	Config  *Config
-	_Global map[string]interface{}
+	_Global tailsafe.DataInterface
 	_Data   []map[string]interface{}
 }
 
@@ -19,7 +19,7 @@ func (e Loop) Configure() (err tailsafe.ErrActionInterface) {
 	return
 }
 
-func (e Loop) GetData() any {
+func (e Loop) GetResult() any {
 	return nil
 }
 
@@ -27,16 +27,13 @@ func (e Loop) Execute() (err tailsafe.ErrActionInterface) {
 	if e.Config == nil {
 		return tailsafe.CatchStackTrace(e.GetContext(), errors.New("Loop: Config is nil"))
 	}
-	v, ok := e._Global[e.Config.Use]
-	if !ok {
-		return
-	}
-	for _, value := range v.([]interface{}) {
+	v := e._Global.Get(e.Config.Use)
+	for _, _ = range v.([]interface{}) {
 		// set current data
-		e.SetCurrent(value)
+		// e.SetCurrent(e.GetKey(), value)
 
 		// call next action
-		err = e.Next()
+		/*err = e.Next(nil)
 		if err != nil {
 			var Err *tailsafe.ErrContinue
 			if !errors.As(err.GetOriginal(), &Err) {
@@ -44,7 +41,7 @@ func (e Loop) Execute() (err tailsafe.ErrActionInterface) {
 			}
 			err = nil
 			continue
-		}
+		}*/
 		/*if e.Plugin() == nil {
 			continue
 		}
@@ -66,13 +63,7 @@ func (e Loop) Data() interface{} {
 func (e Loop) GetConfig() interface{} {
 	return &Config{}
 }
-func (e *Loop) SetConfig(config interface{}) {
-	if config == nil {
-		return
-	}
-	e.Config = config.(*Config)
-}
-func (e *Loop) SetGlobal(data map[string]interface{}) {
+func (e *Loop) SetPayload(data tailsafe.DataInterface) {
 	e._Global = data
 }
 func New(step tailsafe.StepInterface) tailsafe.ActionInterface {
