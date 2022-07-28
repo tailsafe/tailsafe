@@ -28,7 +28,7 @@ func init() {
 
 			modules.
 				GetLoggerModule().
-				Log(payload.SetMessage("🚀 Launching tailsafe-cli - v%s #%s").SetArgs("1.0.0", "6ca5590"))
+				Log(payload.SetMessage("🚀 Launching tailsafe-cli - v%s #%s\n\n").SetArgs("1.0.0", "6ca5590"))
 			break
 		case tailsafeInterface.ReceiveSignalEventInterface:
 			payload := logger.

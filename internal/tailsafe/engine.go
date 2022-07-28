@@ -270,7 +270,15 @@ func (e *Engine) Run() {
 			step := e.template.NewStep()
 			step.SetUse("internal/exec")
 			step.SetTitle("[DEV] Build Action")
-			step.SetData(map[string]interface{}{"command": fmt.Sprintf("go build -buildmode=plugin -o %s/%s@dev.so .", modules.GetUtilsModule().GetAppActionDir(), name), "path": require})
+			step.SetConfig(map[string]interface{}{
+				"command": []string{
+					"go",
+					"build",
+					"-buildmode=plugin",
+					"-o",
+					fmt.Sprintf("%s/%s@dev.so", modules.GetUtilsModule().GetAppActionDir(), name),
+					".",
+				}, "path": require})
 
 			e.template.InjectPreStep([]tailsafe.StepInterface{step})
 			continue

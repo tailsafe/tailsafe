@@ -7,8 +7,10 @@ import (
 	"github.com/tailsafe/tailsafe/internal/tailsafe/actions/datetime"
 	execAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/exec"
 	httpAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/http"
+	jsonEncodeAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/jsonencode"
 	"github.com/tailsafe/tailsafe/internal/tailsafe/actions/loop"
 	payloadAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/payload"
+	printAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/print"
 	"github.com/tailsafe/tailsafe/internal/tailsafe/actions/replace"
 	templateAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/template"
 	"github.com/tailsafe/tailsafe/internal/tailsafe/modules"
@@ -29,15 +31,15 @@ var instance *Actions
 
 // init is called when the package is loaded.
 func init() {
+	// create singleton
 	instance = &Actions{
 		data: make(map[string]func(runtime tailsafe.StepInterface) tailsafe.ActionInterface),
 	}
 
 	// Only internals packages of Golang for the internal actions.
-	// @todo: add a way to add autoload of external actions.
-
 	instance.Lock()
 	defer instance.Unlock()
+
 	instance.data["internal/for"] = loop.New
 	instance.data["internal/if"] = If.New
 	instance.data["internal/datetime"] = datetime.New
@@ -47,6 +49,8 @@ func init() {
 	instance.data["internal/adapter"] = adapterAction.New
 	instance.data["internal/exec"] = execAction.New
 	instance.data["internal/payload"] = payloadAction.New
+	instance.data["internal/print"] = printAction.New
+	instance.data["internal/jsonencode"] = jsonEncodeAction.New
 }
 func Get(name string) (action func(runtime tailsafe.StepInterface) tailsafe.ActionInterface, err error) {
 	// if dev action

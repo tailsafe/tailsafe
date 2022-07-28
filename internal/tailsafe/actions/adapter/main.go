@@ -13,10 +13,11 @@ import (
 
 type AdapterAction struct {
 	tailsafe.StepInterface
-	Config any
+	tailsafe.DataInterface
 
-	global tailsafe.DataInterface
-	data   any
+	Config *any
+
+	data any
 	sync.Mutex
 }
 
@@ -32,27 +33,25 @@ type ObjectType struct {
 func New(step tailsafe.StepInterface) tailsafe.ActionInterface {
 	p := new(AdapterAction)
 	p.StepInterface = step
+	p.Config = new(interface{})
 	return p
 }
 
 /* Generic Getters */
 
 // GetResult returns the data for the action
-func (ta *AdapterAction) GetResult() interface{} {
+func (ta *AdapterAction) GetResult() any {
 	return ta.data
 }
 
 // GetConfig returns the configuration for the action
-func (ta *AdapterAction) GetConfig() interface{} {
-	if ta.Config == nil {
-		return ta.Config
-	}
+func (ta *AdapterAction) GetConfig() any {
 	return ta.Config
 }
 
-// SetGlobal sets the global data for the action
-func (ta *AdapterAction) SetGlobal(data tailsafe.DataInterface) {
-	ta.global = data
+// SetPayload sets the global data for the action
+func (ta *AdapterAction) SetPayload(data tailsafe.DataInterface) {
+	ta.DataInterface = data
 }
 
 // Configure the action
@@ -62,7 +61,7 @@ func (ta *AdapterAction) Configure() tailsafe.ErrActionInterface {
 
 // Execute the action
 func (ta *AdapterAction) Execute() (err tailsafe.ErrActionInterface) {
-	return ta.parse(ta.GetConfig())
+	return ta.parse(*ta.Config)
 }
 
 func (ta *AdapterAction) SetInternalGlobal(key string, data any) {
@@ -70,7 +69,7 @@ func (ta *AdapterAction) SetInternalGlobal(key string, data any) {
 	defer ta.Unlock()
 
 	// ta.global[key] = data
-	ta.global.Set(key, data)
+	ta.Set(key, data)
 	return
 }
 
@@ -78,7 +77,7 @@ func (ta *AdapterAction) GetInternalGlobal(key string) any {
 	ta.Lock()
 	defer ta.Unlock()
 
-	return ta.global.Get(key)
+	return ta.Get(key)
 }
 
 func (ta *AdapterAction) parse(data any) tailsafe.ErrActionInterface {
@@ -100,7 +99,7 @@ func (ta *AdapterAction) parse(data any) tailsafe.ErrActionInterface {
 	return nil
 }
 func (ta *AdapterAction) parseArray(obj *ObjectType) (data []any, err tailsafe.ErrActionInterface) {
-	d := ta.Resolve(fmt.Sprintf("%v", obj.Value), ta.global)
+	d := ta.Resolve(fmt.Sprintf("%v", obj.Value), ta.GetAll())
 	if d == nil {
 		return nil, tailsafe.CatchStackTrace(ta.GetContext(), fmt.Errorf("could not resolve %v", obj.Value))
 	}
@@ -147,14 +146,14 @@ func (ta *AdapterAction) parseProperties(properties map[string]interface{}, dst 
 			ta.Unlock()
 		case "string":
 			ta.Lock()
-			value := ta.Resolve(fmt.Sprintf("%v", obj.Value), ta.global.GetAll())
+			value := ta.Resolve(fmt.Sprintf("%v", obj.Value), ta.GetAll())
 			if value == nil && !obj.Nullable {
 				return tailsafe.CatchStackTrace(ta.GetContext(), fmt.Errorf("could not resolve %v", obj.Value))
 			}
 			dst[k] = fmt.Sprintf("%v", value)
 			ta.Unlock()
 		case "number":
-			value := ta.Resolve(fmt.Sprintf("%v", obj.Value), ta.global)
+			value := ta.Resolve(fmt.Sprintf("%v", obj.Value), ta.GetAll())
 			n, err := strconv.ParseInt(fmt.Sprintf("%v", value), 10, 64)
 			if err != nil {
 				return tailsafe.CatchStackTrace(ta.GetContext(), err)
@@ -163,7 +162,7 @@ func (ta *AdapterAction) parseProperties(properties map[string]interface{}, dst 
 			dst[k] = n
 			ta.Unlock()
 		case "boolean":
-			value := ta.Resolve(fmt.Sprintf("%v", obj.Value), ta.global)
+			value := ta.Resolve(fmt.Sprintf("%v", obj.Value), ta.GetAll())
 			b, err := strconv.ParseBool(fmt.Sprintf("%v", value))
 			if err != nil {
 				return tailsafe.CatchStackTrace(ta.GetContext(), err)
@@ -172,7 +171,7 @@ func (ta *AdapterAction) parseProperties(properties map[string]interface{}, dst 
 			dst[k] = b
 			ta.Unlock()
 		case "datetime":
-			value := fmt.Sprintf("%+v", ta.Resolve(fmt.Sprintf("%v", obj.Value), ta.global))
+			value := fmt.Sprintf("%+v", ta.Resolve(fmt.Sprintf("%v", obj.Value), ta.GetAll()))
 			layout := time.RFC3339
 			timeT, err := time.Parse(layout, value)
 			if err != nil {

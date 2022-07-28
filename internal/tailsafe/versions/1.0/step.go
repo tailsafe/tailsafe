@@ -26,7 +26,7 @@ type Step struct {
 	Title    string   `yaml:"title"`
 	Use      string   `yaml:"use"`
 	LogLevel string   `yaml:"log-level"`
-	Data     any      `yaml:"data"`
+	Config   any      `yaml:"config"`
 	Key      string   `yaml:"key"`
 	Needs    []string `yaml:"needs"`
 
@@ -51,8 +51,8 @@ func (s *Step) SetTitle(title string) tailsafe.StepInterface {
 	return s
 }
 
-func (s *Step) SetData(data any) tailsafe.StepInterface {
-	s.Data = data
+func (s *Step) SetConfig(data any) tailsafe.StepInterface {
+	s.Config = data
 	return s
 }
 
@@ -86,7 +86,7 @@ func (s *Step) GetLogLevel() int {
 }
 
 // Resolve resolves value with path into
-func (s *Step) Resolve(path string, data any) any {
+func (s *Step) Resolve(path string, data map[string]any) any {
 	b, err := json.Marshal(data)
 	if err != nil {
 		return path
@@ -212,8 +212,8 @@ func (s *Step) GetKey() string {
 	}
 	return strings.TrimSpace(s.Key)
 }
-func (s *Step) GetData() interface{} {
-	return s.Data
+func (s *Step) GetConfig() interface{} {
+	return s.Config
 }
 
 func (s *Step) Begin() tailsafe.StageMonitoringInterface {
@@ -268,7 +268,7 @@ func (s *Step) Call() (err error) {
 	actionInstance := actionFunc(s)
 	action := actionInstance
 
-	out, err := json.Marshal(s.GetData())
+	out, err := json.Marshal(s.GetConfig())
 	if err != nil {
 		return err
 	}
@@ -280,14 +280,11 @@ func (s *Step) Call() (err error) {
 		return
 	}
 
-	// Set the config into the action
-	// action.SetConfig(tmp)
-
-	/*	// extract global with need!
-		extractGlobal := s.Engine.ExtractGlobal(s.Needs)
-
-		// set current with each context
-		extractGlobal["current"] = s.Payload*/
+	// Inject need into current payload
+	need := s.Engine.ExtractGlobal(s.Needs)
+	for key, value := range need {
+		s.GetPayload().Set(key, value)
+	}
 
 	// inject into action
 	action.SetPayload(s.GetPayload())
@@ -319,24 +316,21 @@ func (s *Step) Call() (err error) {
 		}
 
 		// if store key is defined, store the value
-		if s.GetKey() != "" {
-			result := action.GetResult()
-			// if not null, saving !
-			if result != nil {
-				// secure key name
-				reservedKey := []string{"args"}
-				if strings.Contains(strings.Join(reservedKey, " "), s.GetKey()) {
-					return fmt.Errorf("key `%s` is reserved from the system [%s]", s.GetKey(), strings.Join(reservedKey, ", "))
-				}
-
-				// Set global data
-				s.Engine.SetData(s.GetKey(), result)
-
-				// Set payload state data
-				s.GetPayload().Set(s.GetKey(), result)
-
-				modules.Get[tailsafe.EventsInterface]("Events").Trigger(tailsafe.NewActionHasStoringDataEvent(s, result))
+		key := s.GetKey()
+		result := action.GetResult()
+		if strings.TrimSpace(key) != "" && result != nil {
+			reservedKey := []string{"args"}
+			if strings.Contains(strings.Join(reservedKey, " "), key) {
+				return fmt.Errorf("key `%s` is reserved from the system [%s]", key, strings.Join(reservedKey, ", "))
 			}
+
+			// Set global data
+			s.Engine.SetData(key, result)
+
+			// Set payload state data
+			s.GetPayload().Set(key, result)
+
+			modules.Get[tailsafe.EventsInterface]("Events").Trigger(tailsafe.NewActionHasStoringDataEvent(s, result))
 		}
 
 		if !s.IsAsync() {

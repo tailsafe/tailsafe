@@ -22,14 +22,14 @@ type Config struct {
 
 type HttpAction struct {
 	tailsafe.StepInterface
+	tailsafe.DataInterface
 	Config *Config
 
-	global tailsafe.DataInterface
-	data   map[string]interface{}
+	data map[string]interface{}
 }
 
 func (r *HttpAction) Configure() (err tailsafe.ErrActionInterface) {
-	path := r.Resolve(r.Config.Path, r.global)
+	path := r.Resolve(r.Config.Path, r.GetAll())
 	if path == nil {
 		return tailsafe.CatchStackTrace(r.GetContext(), errors.New("HttpAction: Path is nil"))
 	}
@@ -83,27 +83,28 @@ func (r *HttpAction) Execute() (err tailsafe.ErrActionInterface) {
 	}
 	return
 }
+
 func (r *HttpAction) GetResult() interface{} {
 	return r.data
 }
+
 func (r *HttpAction) GetConfig() interface{} {
-	if r.Config == nil {
-		return &Config{}
-	}
 	return r.Config
 }
+
 func (r *HttpAction) SetConfig(config interface{}) {
 	r.Config = config.(*Config)
 }
-func (r *HttpAction) SetPayload(data tailsafe.DataInterface) {
-	// set global data
-	r.global = data
 
-	// initialize map
-	r.data = make(map[string]interface{})
+func (r *HttpAction) SetPayload(data tailsafe.DataInterface) {
+	r.DataInterface = data
 }
+
 func New(step tailsafe.StepInterface) tailsafe.ActionInterface {
 	p := new(HttpAction)
 	p.StepInterface = step
+	p.Config = &Config{}
+	p.data = make(map[string]interface{})
+
 	return p
 }

@@ -19,102 +19,8 @@ const (
 	NAMESPACE_WORKFLOW = "global"
 )
 
-type Logger interface {
-	Log(LoggerPayload)
-}
-type LoggerPayload interface {
-	GetNamespace() string
-	GetLevel() int
-	GetMessage() string
-	GetArgs() []any
-
-	SetNamespace(string) LoggerPayload
-	SetLevel(int) LoggerPayload
-	SetMessage(string) LoggerPayload
-	SetArgs(...any) LoggerPayload
-}
-
-type TemplateInterface interface {
-	NewStep() StepInterface
-
-	GetTitle() string
-	GetDescription() string
-	GetMaintainer() string
-	GetRevision() int
-
-	GetSteps() []StepInterface
-	GetDependencies() []string
-
-	InjectPreStep([]StepInterface)
-	InjectPostStep([]StepInterface)
-}
-
-// StepInterface represents a step in the workflow
-type StepInterface interface {
-	/* Public Getters */
-
-	Call() (err error)
-	GetTitle() string
-	GetKey() string
-	GetUse() string
-	GetLogLevel() int
-	GetChildLevel() int
-	GetWait() []string
-
-	GetSteps() []StepInterface
-	GetSuccessSteps() []StepInterface
-	GetFailSteps() []StepInterface
-
-	GetEngine() EngineInterface
-	GetContext() context.Context
-	GetPayload() DataInterface
-	Next(payload DataInterface) ErrActionInterface
-	Resolve(path string, data any) any
-	IsAsync() bool
-
-	/* Public Setters */
-
-	SetContext(context.Context)
-	SetEngine(EngineInterface)
-	SetPayload(DataInterface)
-
-	SetUse(string) StepInterface
-	SetTitle(string) StepInterface
-	SetData(data any) StepInterface
-}
-
-// ActionInterface represents an action in the workflow
-type ActionInterface interface {
-	// Configure the action
-	Configure() (err ErrActionInterface)
-
-	// Execute the action
-	Execute() (err ErrActionInterface)
-
-	// SetPayload sets the payload for the action
-	SetPayload(DataInterface)
-
-	// GetConfig returns the configuration for the action
-	GetConfig() any
-
-	// GetResult returns the result for the action
-	GetResult() any
-}
-
-type EventsInterface interface {
-	Trigger(event EventInterface)
-}
-
 type Utils interface {
 	Pretty(v any, level int) any
-}
-
-type Event interface {
-	SetBody(...any)
-	SetKey(string)
-
-	GetBody() []any
-	GetKey() string
 }
 
 // EngineInterface represents a engine in the workflow
@@ -143,24 +49,6 @@ type EngineInterface interface {
 	EntrySubStage()
 	// ExitSubStage exits a sub stage
 	ExitSubStage()
-}
-
-/* Async process */
-
-// AsyncQueue is a generic func for running an async action.
-type AsyncQueue interface {
-
-	// AddActionToQueue Add an action to the asynchronous queue
-	AddActionToQueue(action string, call func() error) AsyncQueue
-
-	// WaitActions Allows you to wait for the end of the specified actions
-	WaitActions(actions ...string) error
-
-	// WaitAll Allows you to wait for the end of all actions
-	WaitAll()
-
-	// SetWorkers sets the number of workers for the asynchronous queue
-	SetWorkers(num int) AsyncQueue
 }
 
 type StageMonitoringInterface interface {
@@ -248,10 +136,4 @@ func CatchStackTrace(_ context.Context, err error) ErrAction {
 	}
 
 	return est
-}
-
-type DataInterface interface {
-	Set(key string, value any)
-	Get(key string) any
-	GetAll() map[string]any
 }

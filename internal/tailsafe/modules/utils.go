@@ -72,7 +72,7 @@ func (e *Utils) GetAppDir() string {
 }
 
 func (e *Utils) GetAppActionDir() string {
-	return e.appDir
+	return e.appDirAction
 }
 
 func (e *Utils) GetAppTemplateDir() string {
