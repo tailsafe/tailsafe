@@ -15,7 +15,7 @@ type AdapterAction struct {
 	tailsafe.StepInterface
 	tailsafe.DataInterface
 
-	Config *any
+	Config any
 
 	data any
 	sync.Mutex
@@ -46,7 +46,7 @@ func (ta *AdapterAction) GetResult() any {
 
 // GetConfig returns the configuration for the action
 func (ta *AdapterAction) GetConfig() any {
-	return ta.Config
+	return &ta.Config
 }
 
 // SetPayload sets the global data for the action
@@ -61,7 +61,7 @@ func (ta *AdapterAction) Configure() tailsafe.ErrActionInterface {
 
 // Execute the action
 func (ta *AdapterAction) Execute() (err tailsafe.ErrActionInterface) {
-	return ta.parse(*ta.Config)
+	return ta.parse(ta.Config)
 }
 
 func (ta *AdapterAction) SetInternalGlobal(key string, data any) {
@@ -187,7 +187,7 @@ func (ta *AdapterAction) parseProperties(properties map[string]interface{}, dst 
 
 // getType returns the primary type of the data
 func (ta *AdapterAction) getType(data any) (objType *ObjectType, err error) {
-	m, ok := data.(map[string]interface{})
+	m, ok := data.(map[string]any)
 	if !ok {
 		err = errors.New("config is not an object")
 		return
