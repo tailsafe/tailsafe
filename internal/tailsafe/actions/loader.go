@@ -7,6 +7,7 @@ import (
 	"github.com/tailsafe/tailsafe/internal/tailsafe/actions/datetime"
 	execAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/exec"
 	httpAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/http"
+	jsonDecodeAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/jsondecode"
 	jsonEncodeAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/jsonencode"
 	"github.com/tailsafe/tailsafe/internal/tailsafe/actions/loop"
 	payloadAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/payload"
@@ -50,7 +51,8 @@ func init() {
 	instance.data["internal/exec"] = execAction.New
 	instance.data["internal/payload"] = payloadAction.New
 	instance.data["internal/print"] = printAction.New
-	instance.data["internal/jsonencode"] = jsonEncodeAction.New
+	instance.data["internal/jsonEncode"] = jsonEncodeAction.New
+	instance.data["internal/jsonDecode"] = jsonDecodeAction.New
 }
 func Get(name string) (action func(runtime tailsafe.StepInterface) tailsafe.ActionInterface, err error) {
 	// if dev action

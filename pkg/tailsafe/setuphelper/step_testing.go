@@ -82,7 +82,11 @@ func (s *Step) Next(payload tailsafe.DataInterface) tailsafe.ErrActionInterface 
 }
 
 func (s *Step) Resolve(path string, data map[string]any) any {
-	return data[path]
+	v, ok := data[path]
+	if !ok {
+		return path
+	}
+	return v
 }
 
 func (s *Step) IsAsync() bool {

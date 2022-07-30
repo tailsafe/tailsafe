@@ -39,15 +39,19 @@ func (pa *JsonEncodeAction) Execute() tailsafe.ErrActionInterface {
 	pa.result = string(res)
 	return nil
 }
+
 func (pa *JsonEncodeAction) GetResult() interface{} {
 	return pa.result
 }
+
 func (pa *JsonEncodeAction) GetConfig() interface{} {
 	return pa.Config
 }
+
 func (pa *JsonEncodeAction) SetPayload(data tailsafe.DataInterface) {
 	pa.DataInterface = data
 }
+
 func New(step tailsafe.StepInterface) tailsafe.ActionInterface {
 	p := new(JsonEncodeAction)
 	p.StepInterface = step
