@@ -112,13 +112,21 @@ func (s *Step) GetContext() context.Context {
 	return s.Context
 }
 func (s *Step) Next(payload tailsafe.DataInterface) tailsafe.ErrActionInterface {
-	return s._Next(payload, nil)
+	// if action use next if-success or if-fail
+	s.NextIsAlreadyCalled = true
+
+	return s._Next(payload, nil, true)
 }
-func (s *Step) _Next(payload tailsafe.DataInterface, err error) tailsafe.ErrActionInterface {
+func (s *Step) _Next(payload tailsafe.DataInterface, err error, fromAction bool) tailsafe.ErrActionInterface {
+	if !fromAction && s.NextIsAlreadyCalled {
+		if err == nil {
+			return nil
+		}
+		return err.(tailsafe.ErrActionInterface)
+	}
 	s.Engine.EntrySubStage()
 	defer func() {
 		s.Engine.ExitSubStage()
-		s.NextIsAlreadyCalled = true
 	}()
 	var steps []tailsafe.StepInterface
 
@@ -351,5 +359,5 @@ func (s *Step) Call() (err error) {
 		return
 	}
 
-	return s._Next(s.GetPayload(), payload())
+	return s._Next(s.GetPayload(), payload(), false)
 }

@@ -1,91 +1,114 @@
-package If
+package IfAction
 
 import (
+	"errors"
+	"fmt"
 	"github.com/tailsafe/tailsafe/pkg/tailsafe"
+	"strconv"
 )
 
 type Config struct {
-	Rules []Rule `json:"rules"`
+	A        string `json:"a"`
+	B        string `json:"b"`
+	Operator string `json:"operator"`
 }
-type Rule struct {
-	Type  string `json:"type"`
-	Value string `json:"value"`
-	Key   string `json:"key"`
+
+type Number interface {
+	int | int8 | int16 | int32 | int64 | float32 | float64
 }
+type N struct {
+	int
+	int8
+	int16
+	int32
+	int64
+	float32
+	float64
+}
+
 type If struct {
 	tailsafe.StepInterface
 	tailsafe.DataInterface
 
-	Config *Config
+	Config []Config
 	Result any
 }
 
-func (r *If) Configure() (err tailsafe.ErrActionInterface) {
+func (i *If) Configure() (err tailsafe.ErrActionInterface) {
+	if i.Config == nil {
+		return tailsafe.CatchStackTrace(i.GetContext(), errors.New("if: Config has not been set"))
+	}
+	if len(i.Config) == 0 {
+		return tailsafe.CatchStackTrace(i.GetContext(), errors.New("if: Config is empty"))
+	}
 	return
 }
 
 // Execute executes the action
-func (r *If) Execute() tailsafe.ErrActionInterface {
-	//isContinue := true
-	/*for _, rule := range r.Config.Rules {
-		switch rule.Type {
-		case "contains":
-			key := r.Resolve(rule.Key, r._Data)
-			value := r.Resolve(rule.Value, r._Data)
-			if key == nil || value == nil {
-				break
+func (i *If) Execute() tailsafe.ErrActionInterface {
+	defer func() {
+		i.Set(tailsafe.RETURN, i.Result)
+	}()
+	for _, c := range i.Config {
+		switch c.Operator {
+		case "==":
+			if i.Resolve(c.A, map[string]any{"this": i.Get(tailsafe.THIS)}) == i.Resolve(c.B, map[string]any{"this": i.Get(tailsafe.THIS)}) {
+				i.Result = true
+			}
+			break
+		case ">", "<", ">=", "<=":
+			aV, err := i.toFloat64(i.Resolve(c.A, map[string]any{"this": i.Get(tailsafe.THIS)}))
+			if err != nil {
+				return tailsafe.CatchStackTrace(i.GetContext(), err)
+			}
+			bV, err := i.toFloat64(i.Resolve(c.B, map[string]any{"this": i.Get(tailsafe.THIS)}))
+			if err != nil {
+				return tailsafe.CatchStackTrace(i.GetContext(), err)
 			}
 
-			// specific case for object
-			valueMap, ok := value.(map[string]interface{})
-			if ok {
-				for _, v := range valueMap {
-					keyString, ok := key.(string)
-					if !ok {
-						break
-					}
-					if strings.Contains(v.(string), keyString) {
-						isContinue = false
-						break
-					}
+			switch c.Operator {
+			case ">":
+				if aV > bV {
+					i.Result = true
+				}
+				break
+			case "<":
+				if aV < bV {
+					i.Result = true
+				}
+				break
+			case ">=":
+				if aV >= bV {
+					i.Result = true
+				}
+				break
+			case "<=":
+				if aV <= bV {
+					i.Result = true
 				}
 				break
 			}
-
-			// default case
-			keyString, ok := key.(string)
-			if !ok {
-				break
-			}
-			valueString, ok := value.(string)
-			if !ok {
-				break
-			}
-			if !strings.Contains(valueString, keyString) {
-				break
-			}
-			isContinue = false
 		}
 	}
-	if isContinue {
-		return tailsafe.CatchStackTrace(r.GetContext(), &tailsafe.ErrContinue{Message: "continue"})
-	}*/
-	// if it matches, we keep the data
-	//r._Data = r.Get("current")
 	return nil
 }
-func (r *If) GetResult() interface{} {
-	return r.Result
+
+func (i *If) toFloat64(value any) (float64, error) {
+	return strconv.ParseFloat(fmt.Sprintf("%v", value), 64)
 }
-func (r *If) GetConfig() interface{} {
-	return r.Config
+
+func (i *If) GetResult() interface{} {
+	return i.Result
 }
-func (r *If) SetGlobal(data tailsafe.DataInterface) {
-	r.DataInterface = data
+func (i *If) GetConfig() interface{} {
+	return &i.Config
+}
+func (i *If) SetPayload(data tailsafe.DataInterface) {
+	i.DataInterface = data
 }
 func New(step tailsafe.StepInterface) tailsafe.ActionInterface {
 	p := new(If)
 	p.StepInterface = step
-	p.Config = &Config{}
+	p.Config = []Config{}
 	return p
 }

@@ -124,7 +124,7 @@ func init() {
 				NewPayload().
 				SetNamespace(tailsafeInterface.NAMESPACE_DEFAULT).
 				SetLevel(e.GetStep().GetLogLevel()).
-				SetMessage(" %s").
+				SetMessage("%s").
 				SetArgs(modules.GetUtilsModule().Indent(e.GetStringValue(), e.GetIntValue()))
 
 			modules.

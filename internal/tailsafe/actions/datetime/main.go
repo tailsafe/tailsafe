@@ -1,4 +1,4 @@
-package datetime
+package datetimeAction
 
 import (
 	"github.com/tailsafe/tailsafe/pkg/tailsafe"

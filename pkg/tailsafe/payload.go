@@ -3,6 +3,7 @@ package tailsafe
 import "sync"
 
 const THIS = "this"
+const RETURN = "RETURN"
 
 type payload struct {
 	sync.Mutex

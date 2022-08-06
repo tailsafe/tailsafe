@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/tailsafe/tailsafe/internal/tailsafe/actions/If"
 	adapterAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/adapter"
-	"github.com/tailsafe/tailsafe/internal/tailsafe/actions/datetime"
+	datetimeAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/datetime"
 	execAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/exec"
 	httpAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/http"
 	jsonDecodeAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/jsondecode"
@@ -13,6 +13,7 @@ import (
 	payloadAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/payload"
 	printAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/print"
 	"github.com/tailsafe/tailsafe/internal/tailsafe/actions/replace"
+	sortAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/sort"
 	templateAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/template"
 	"github.com/tailsafe/tailsafe/internal/tailsafe/modules"
 	"github.com/tailsafe/tailsafe/pkg/tailsafe"
@@ -42,9 +43,9 @@ func init() {
 	defer instance.Unlock()
 
 	instance.data["internal/for"] = loop.New
-	instance.data["internal/if"] = If.New
-	instance.data["internal/datetime"] = datetime.New
-	instance.data["internal/replace"] = replace.New
+	instance.data["internal/if"] = IfAction.New
+	instance.data["internal/datetime"] = datetimeAction.New
+	instance.data["internal/replace"] = replaceAction.New
 	instance.data["internal/http"] = httpAction.New
 	instance.data["internal/template"] = templateAction.New
 	instance.data["internal/adapter"] = adapterAction.New
@@ -53,6 +54,7 @@ func init() {
 	instance.data["internal/print"] = printAction.New
 	instance.data["internal/jsonEncode"] = jsonEncodeAction.New
 	instance.data["internal/jsonDecode"] = jsonDecodeAction.New
+	instance.data["internal/sort"] = sortAction.New
 }
 func Get(name string) (action func(runtime tailsafe.StepInterface) tailsafe.ActionInterface, err error) {
 	// if dev action

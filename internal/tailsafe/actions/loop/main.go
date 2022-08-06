@@ -9,25 +9,24 @@ type Config struct {
 	Use string `json:"use"`
 }
 type Loop struct {
+	tailsafe.DataInterface
 	tailsafe.StepInterface
-	Config  *Config
-	_Global tailsafe.DataInterface
-	_Data   []map[string]interface{}
+	Config *Config
 }
 
-func (e Loop) Configure() (err tailsafe.ErrActionInterface) {
-	return
-}
-
-func (e Loop) GetResult() any {
-	return nil
-}
-
-func (e Loop) Execute() (err tailsafe.ErrActionInterface) {
+func (e *Loop) Configure() (err tailsafe.ErrActionInterface) {
 	if e.Config == nil {
 		return tailsafe.CatchStackTrace(e.GetContext(), errors.New("Loop: Config is nil"))
 	}
-	v := e._Global.Get(e.Config.Use)
+	return
+}
+
+func (e *Loop) GetResult() any {
+	return nil
+}
+
+func (e *Loop) Execute() (err tailsafe.ErrActionInterface) {
+	v := e.Get(e.Config.Use)
 	for _, _ = range v.([]interface{}) {
 		// set current data
 		// e.SetCurrent(e.GetKey(), value)
@@ -57,14 +56,14 @@ func (e Loop) Execute() (err tailsafe.ErrActionInterface) {
 	}
 	return
 }
-func (e Loop) Data() interface{} {
+func (e *Loop) Data() interface{} {
 	return nil
 }
-func (e Loop) GetConfig() interface{} {
-	return &Config{}
+func (e *Loop) GetConfig() interface{} {
+	return e.Config
 }
 func (e *Loop) SetPayload(data tailsafe.DataInterface) {
-	e._Global = data
+	e.DataInterface = data
 }
 func New(step tailsafe.StepInterface) tailsafe.ActionInterface {
 	p := new(Loop)

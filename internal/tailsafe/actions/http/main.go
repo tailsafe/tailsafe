@@ -72,7 +72,7 @@ func (r *HttpAction) Execute() (err tailsafe.ErrActionInterface) {
 	r.data["headers"] = res.Header
 
 	switch {
-	case strings.HasPrefix(r.Config.Headers.Accept, "application/json"):
+	case strings.HasPrefix(res.Header.Get("Content-Type"), "application/json"):
 		var data any
 		err := json.Unmarshal(body, &data)
 		if err != nil {

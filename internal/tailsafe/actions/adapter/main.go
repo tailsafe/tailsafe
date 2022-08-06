@@ -64,22 +64,6 @@ func (ta *AdapterAction) Execute() (err tailsafe.ErrActionInterface) {
 	return ta.parse(ta.Config)
 }
 
-func (ta *AdapterAction) SetInternalGlobal(key string, data any) {
-	ta.Lock()
-	defer ta.Unlock()
-
-	// ta.global[key] = data
-	ta.Set(key, data)
-	return
-}
-
-func (ta *AdapterAction) GetInternalGlobal(key string) any {
-	ta.Lock()
-	defer ta.Unlock()
-
-	return ta.Get(key)
-}
-
 func (ta *AdapterAction) parse(data any) tailsafe.ErrActionInterface {
 	obj, err := ta.getType(data)
 	if err != nil {
@@ -105,11 +89,11 @@ func (ta *AdapterAction) parseArray(obj *ObjectType) (data []any, err tailsafe.E
 	}
 	rf := reflect.TypeOf(d).Kind()
 	if rf != reflect.Slice {
-		return data, tailsafe.CatchStackTrace(ta.GetContext(), errors.New(rf.String()+" is not a slice"))
+		return data, tailsafe.CatchStackTrace(ta.GetContext(), fmt.Errorf("%v (%s) is not a slice", d, rf.String()))
 	}
-	tmp := ta.GetInternalGlobal("this")
+	tmp := ta.Get(tailsafe.THIS)
 	for _, this := range d.([]interface{}) {
-		ta.SetInternalGlobal("this", this)
+		ta.Set(tailsafe.THIS, this)
 		newObject := make(map[string]interface{})
 		err := ta.parseProperties(obj.Properties, newObject)
 		if err != nil {
@@ -117,7 +101,7 @@ func (ta *AdapterAction) parseArray(obj *ObjectType) (data []any, err tailsafe.E
 		}
 		data = append(data, newObject)
 	}
-	ta.SetInternalGlobal("this", tmp)
+	ta.Set(tailsafe.THIS, tmp)
 	return
 }
 func (ta *AdapterAction) parseProperties(properties map[string]interface{}, dst map[string]interface{}) tailsafe.ErrActionInterface {
@@ -154,6 +138,9 @@ func (ta *AdapterAction) parseProperties(properties map[string]interface{}, dst 
 			ta.Unlock()
 		case "number":
 			value := ta.Resolve(fmt.Sprintf("%v", obj.Value), ta.GetAll())
+			if value == nil && !obj.Nullable {
+				return tailsafe.CatchStackTrace(ta.GetContext(), fmt.Errorf("could not resolve %v", obj.Value))
+			}
 			n, err := strconv.ParseInt(fmt.Sprintf("%v", value), 10, 64)
 			if err != nil {
 				return tailsafe.CatchStackTrace(ta.GetContext(), err)
@@ -163,6 +150,9 @@ func (ta *AdapterAction) parseProperties(properties map[string]interface{}, dst 
 			ta.Unlock()
 		case "boolean":
 			value := ta.Resolve(fmt.Sprintf("%v", obj.Value), ta.GetAll())
+			if value == nil && !obj.Nullable {
+				return tailsafe.CatchStackTrace(ta.GetContext(), fmt.Errorf("could not resolve %v", obj.Value))
+			}
 			b, err := strconv.ParseBool(fmt.Sprintf("%v", value))
 			if err != nil {
 				return tailsafe.CatchStackTrace(ta.GetContext(), err)
