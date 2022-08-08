@@ -51,9 +51,18 @@ func (i *If) Execute() tailsafe.ErrActionInterface {
 	}()
 	for _, c := range i.Config {
 		switch c.Operator {
-		case "==":
-			if i.Resolve(c.A, map[string]any{"this": i.Get(tailsafe.THIS)}) == i.Resolve(c.B, map[string]any{"this": i.Get(tailsafe.THIS)}) {
-				i.Result = true
+		case "==", "!=":
+			switch c.Operator {
+			case "==":
+				if i.Resolve(c.A, map[string]any{"this": i.Get(tailsafe.THIS)}) == i.Resolve(c.B, map[string]any{"this": i.Get(tailsafe.THIS)}) {
+					i.Result = true
+				}
+				break
+			case "!=":
+				if i.Resolve(c.A, map[string]any{"this": i.Get(tailsafe.THIS)}) != i.Resolve(c.B, map[string]any{"this": i.Get(tailsafe.THIS)}) {
+					i.Result = true
+				}
+				break
 			}
 			break
 		case ">", "<", ">=", "<=":

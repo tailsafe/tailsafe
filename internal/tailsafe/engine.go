@@ -264,9 +264,6 @@ func (e *Engine) Run() {
 			split := strings.Split(require, "/")
 			name := split[len(split)-1]
 
-			//_ = os.Setenv("GOOS", runtime.GOOS)
-			//_ = os.Setenv("GOARCH", runtime.GOARCH)
-
 			step := e.template.NewStep()
 			step.SetUse("internal/exec")
 			step.SetTitle("[DEV] Build Action")
@@ -283,16 +280,6 @@ func (e *Engine) Run() {
 			e.template.InjectPreStep([]tailsafe.StepInterface{step})
 			continue
 		}
-		// testing found *.so plugins
-		/*	split := strings.Split(require, "@")
-
-			packageName := split[0]
-			version := "latest"
-			if len(split) > 1 {
-				version = split[1]
-			}*/
-
-		// log.Print(packageName, version)
 	}
 
 	// Validate arguments

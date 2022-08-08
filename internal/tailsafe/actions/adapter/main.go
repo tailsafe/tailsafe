@@ -26,14 +26,15 @@ type ObjectType struct {
 	Value      any
 	Extra      any
 	Nullable   bool
-	Properties map[string]interface{}
+	Properties map[string]any
+	Items      map[string]any
 }
 
 // New creates a new AdapterAction
 func New(step tailsafe.StepInterface) tailsafe.ActionInterface {
 	p := new(AdapterAction)
 	p.StepInterface = step
-	p.Config = new(interface{})
+
 	return p
 }
 
@@ -77,7 +78,7 @@ func (ta *AdapterAction) parse(data any) tailsafe.ErrActionInterface {
 		}
 		ta.data = arrayData
 	case "object":
-		ta.data = make(map[string]interface{})
+		ta.data = make(map[string]any)
 		return ta.parseProperties(obj.Properties, ta.data.(map[string]any))
 	}
 	return nil
@@ -92,19 +93,34 @@ func (ta *AdapterAction) parseArray(obj *ObjectType) (data []any, err tailsafe.E
 		return data, tailsafe.CatchStackTrace(ta.GetContext(), fmt.Errorf("%v (%s) is not a slice", d, rf.String()))
 	}
 	tmp := ta.Get(tailsafe.THIS)
-	for _, this := range d.([]interface{}) {
+
+	for _, this := range d.([]any) {
+
 		ta.Set(tailsafe.THIS, this)
-		newObject := make(map[string]interface{})
+
+		if len(obj.Items) > 0 {
+			newObject := make(map[string]any)
+			err := ta.parseProperties(map[string]any{tailsafe.THIS: obj.Items}, newObject)
+			if err != nil {
+				return data, tailsafe.CatchStackTrace(ta.GetContext(), err)
+			}
+			data = append(data, newObject[tailsafe.THIS])
+			continue
+		}
+
+		newObject := make(map[string]any)
 		err := ta.parseProperties(obj.Properties, newObject)
 		if err != nil {
 			return data, tailsafe.CatchStackTrace(ta.GetContext(), err)
 		}
+
 		data = append(data, newObject)
 	}
+
 	ta.Set(tailsafe.THIS, tmp)
 	return
 }
-func (ta *AdapterAction) parseProperties(properties map[string]interface{}, dst map[string]interface{}) tailsafe.ErrActionInterface {
+func (ta *AdapterAction) parseProperties(properties map[string]any, dst map[string]any) tailsafe.ErrActionInterface {
 	for k, v := range properties {
 		obj, err := ta.getType(v)
 		if err != nil {
@@ -120,7 +136,7 @@ func (ta *AdapterAction) parseProperties(properties map[string]interface{}, dst 
 			dst[k] = data
 			ta.Unlock()
 		case "object":
-			newObject := make(map[string]interface{})
+			newObject := make(map[string]any)
 			err := ta.parseProperties(obj.Properties, newObject)
 			if err != nil {
 				return tailsafe.CatchStackTrace(ta.GetContext(), err)
@@ -188,18 +204,23 @@ func (ta *AdapterAction) getType(data any) (objType *ObjectType, err error) {
 		err = fmt.Errorf("type must be in string, not %v (%v)", reflect.TypeOf(m["type"]), m["type"])
 		return
 	}
-	objType.Properties, ok = m["properties"].(map[string]interface{})
+	objType.Properties, ok = m["properties"].(map[string]any)
 	if !ok {
-		objType.Properties = make(map[string]interface{})
+		objType.Properties = make(map[string]any)
 	}
 	objType.Value, _ = m["value"]
 	objType.Extra, _ = m["extra"]
 
-	authorized := []string{"string", "number", "object", "array", "datetime", "boolean"}
+	authorized := []string{"string", "number", "datetime", "boolean", "object", "array"}
 
 	if !slices.Contains(authorized, objType.Type) {
 		err = fmt.Errorf("type `%s` is not supported", objType.Type)
 		return
+	}
+
+	objType.Items, ok = m["items"].(map[string]any)
+	if !ok {
+		objType.Items = make(map[string]any)
 	}
 
 	return
