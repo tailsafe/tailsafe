@@ -2,28 +2,28 @@ type: object
 properties:
   number:
     type: number
-    value: "{{ object.number }}"
+    value: object.number?
   string:
     type: string
-    value: "{{ object.string }}"
+    value: object.string?
   boolean:
     type: boolean
-    value: "{{ object.boolean }}"
+    value: object.boolean?
   datetime:
     type: datetime
-    value: "{{ object.datetime }}"
+    value: object.datetime?
   sub_object:
     type: object
     properties:
       number:
         type: number
-        value: "{{ object.number }}"
+        value: object.number?
       string:
         type: string
-        value: "{{ object.string }}"
+        value: object.string?
       boolean:
         type: boolean
-        value: "{{ object.boolean }}"
+        value: object.boolean?
       datetime:
         type: datetime
-        value: "{{ object.datetime }}"
+        value: object.datetime?

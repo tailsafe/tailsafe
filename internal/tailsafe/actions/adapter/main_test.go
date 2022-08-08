@@ -209,7 +209,7 @@ func TestAdapterAction_ExecuteWithNoResolveArray(t *testing.T) {
 	}
 
 	assert.IsType(t, tailsafe.ErrAction{}, err)
-	assert.ErrorContains(t, err, "could not resolve {{ global.array }}")
+	assert.ErrorContains(t, err, "could not resolve global.array?")
 }
 
 func TestAdapterAction_ExecuteArrayBadType(t *testing.T) {

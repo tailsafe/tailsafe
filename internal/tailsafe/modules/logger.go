@@ -116,6 +116,7 @@ func (l *Logger) GetVerbose() bool {
 	return l.verbose
 }
 
+// Log logs a message with the given level
 func (l *Logger) Log(payload tailsafe.LoggerPayload) {
 	// if namespace contains the namespace, then log the message
 	if !slices.Contains(l.GetNamespaces(), payload.GetNamespace()) {

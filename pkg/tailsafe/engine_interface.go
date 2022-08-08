@@ -34,7 +34,7 @@ type EngineInterface interface {
 
 	Run()
 
-	/* Mock payload process */
+	/* Mock Payload process */
 
 	GetMockDataByKey(key string) any
 
@@ -108,7 +108,7 @@ func (e ErrAction) GetStackTrace() string {
 	return e.trace
 }
 
-// Error returns the error message with more payload
+// Error returns the error message with more Payload
 func (e ErrAction) Error() string {
 	return fmt.Sprintf("`%s` was triggered by %s:%d from %s", e.original.Error(), e.caller, e.line, e.file)
 }

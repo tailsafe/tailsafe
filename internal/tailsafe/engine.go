@@ -2,7 +2,6 @@ package tailsafe
 
 import (
 	"context"
-	_ "embed"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -310,23 +309,6 @@ func (e *Engine) Run() {
 
 	// Wait all the actions to finish
 	modules.GetAsyncQueue().WaitAll()
-
-	/*// print the stdout result if necessary
-	stdout := e.ExtractGlobal(e.template.GetStdOut())
-
-	if len(stdout) == 0 {
-		return
-	}
-	//e.Log(tailsafe.NAMESPACE_DEFAULT, tailsafe.LOG_INFO, "\n")
-	for _, line := range stdout {
-		rf := reflect.TypeOf(line)
-		switch rf.Kind() {
-		case reflect.Slice:
-			for range line.([]interface{}) {
-				//	e.Log(tailsafe.NAMESPACE_DEFAULT, tailsafe.LOG_INFO, fmt.Sprintf("%s", l))
-			}
-		}
-	}*/
 	return
 }
 

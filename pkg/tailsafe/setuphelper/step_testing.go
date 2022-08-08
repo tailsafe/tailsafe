@@ -2,11 +2,8 @@ package setuphelper
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
+	"github.com/tailsafe/tailsafe/internal/tailsafe/resolver"
 	"github.com/tailsafe/tailsafe/pkg/tailsafe"
-	"github.com/tidwall/gjson"
-	"regexp"
 	"strings"
 )
 
@@ -87,20 +84,14 @@ func (s *Step) Next(payload tailsafe.DataInterface) tailsafe.ErrActionInterface 
 }
 
 func (s *Step) Resolve(path string, data map[string]any) any {
-	b, err := json.Marshal(data)
-	if err != nil {
+	if strings.TrimSpace(path) == "" {
 		return path
 	}
-	var re = regexp.MustCompile(`(?m){{(.*)}}`)
-	result := re.FindAllStringSubmatch(path, -1)
-	if len(result) == 0 {
+	if !strings.HasSuffix(path, "?") {
 		return path
 	}
-	value := gjson.Get(string(b), strings.TrimSpace(result[0][1]))
-	if value.Type == gjson.String {
-		return strings.ReplaceAll(path, result[0][0], fmt.Sprintf("%v", value.String()))
-	}
-	return value.Value()
+
+	return resolver.Get(path[:len(path)-1], data)
 }
 
 func (s *Step) IsAsync() bool {

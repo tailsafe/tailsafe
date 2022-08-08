@@ -94,8 +94,12 @@ func (ta *AdapterAction) parseArray(obj *ObjectType) (data []any, err tailsafe.E
 	}
 	tmp := ta.Get(tailsafe.THIS)
 
-	for _, this := range d.([]any) {
-
+	s := reflect.ValueOf(d)
+	if !s.IsValid() {
+		return data, tailsafe.CatchStackTrace(ta.GetContext(), fmt.Errorf("%v is not valid", d))
+	}
+	for i := 0; i < s.Len(); i++ {
+		this := s.Index(i).Interface()
 		ta.Set(tailsafe.THIS, this)
 
 		if len(obj.Items) > 0 {

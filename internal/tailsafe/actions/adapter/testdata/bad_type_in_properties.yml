@@ -1,5 +1,5 @@
 type: array
-value: "{{ global.array }}"
+value: global.array?
 properties:
   number:
     type: unknown

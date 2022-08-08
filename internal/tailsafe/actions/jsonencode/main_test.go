@@ -85,12 +85,12 @@ func TestJsonEncodeAction_Execute(t *testing.T) {
 		cfg := action.GetConfig()
 		assert.NotNil(t, cfg)
 
-		cfg.(*Config).Value = "{{ value }}"
+		cfg.(*Config).Value = "value?"
 
 		config := make(map[string]interface{})
 		config["value"] = "test"
 		payload := tailsafe.NewPayload()
-		payload.Set("{{ value }}", config)
+		payload.Set("value", config)
 
 		action.SetPayload(payload)
 

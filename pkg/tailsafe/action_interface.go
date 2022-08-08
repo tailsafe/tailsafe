@@ -8,7 +8,7 @@ type ActionInterface interface {
 	// Execute the action
 	Execute() (err ErrActionInterface)
 
-	// SetPayload sets the payload for the action
+	// SetPayload sets the Payload for the action
 	SetPayload(DataInterface)
 
 	// GetConfig returns the configuration for the action
