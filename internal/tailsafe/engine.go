@@ -333,31 +333,31 @@ func (e *Engine) SetData(key string, data any) {
 		return
 	}
 
-	// get real type of the data with reflect
-	var store []any
-	rf := reflect.TypeOf(slice)
+	/*	// get real type of the data with reflect
+		var store []any
+		rf := reflect.TypeOf(slice)
 
-	switch rf.Kind() {
-	// check if the data is a Map (like ~object)
-	case reflect.Slice:
-		store = append(store, slice.([]interface{})...)
-		break
-	//check if the data is a Slice (Like ~array)
-	case reflect.Map:
-		store = append(store, slice)
-		break
-	default:
-		store = append(store, slice)
-	}
+		switch rf.Kind() {
+		// check if the data is a Map (like ~object)
+		case reflect.Slice:
+			store = append(store, slice.([]interface{})...)
+			break
+		//check if the data is a Slice (Like ~array)
+		case reflect.Map:
+			store = append(store, slice)
+			break
+		default:
+			store = append(store, slice)
+		}
 
-	// check if key is already in the data and append the new data
-	found, ok := e.data[key]
-	if ok {
-		found = append(found.([]interface{}), store...)
-	}
+		// check if key is already in the data and append the new data
+		found, ok := e.data[key]
+		if ok {
+			found = append(found.([]interface{}), store...)
+		}*/
 
 	// set the data
-	e.data[key] = store
+	e.data[key] = slice
 }
 
 // ExtractGlobal extract required data from the global context
