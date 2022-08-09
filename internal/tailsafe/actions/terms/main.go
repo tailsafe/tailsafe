@@ -1,4 +1,4 @@
-package IfAction
+package termsAction
 
 import (
 	"errors"
