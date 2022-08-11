@@ -30,7 +30,7 @@ type EngineInterface interface {
 
 	SetPath(path string) EngineInterface
 	SetEnv(env string) EngineInterface
-	SetPathData(path string) EngineInterface
+	SetDataPath(path string) EngineInterface
 
 	Run()
 

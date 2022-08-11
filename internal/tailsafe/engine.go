@@ -127,8 +127,8 @@ func (e *Engine) SetPath(path string) tailsafe.EngineInterface {
 	return e
 }
 
-// SetPathData sets the path of the payload
-func (e *Engine) SetPathData(path string) tailsafe.EngineInterface {
+// SetDataPath sets the path of the payload
+func (e *Engine) SetDataPath(path string) tailsafe.EngineInterface {
 	e.pathData = path
 	return e
 }
@@ -199,7 +199,13 @@ func (e *Engine) Parse() (err error) {
 	}
 
 	// Check if user as specified a path to the data
-	if e.pathData != "" {
+	// @TODO: need refactoring override short path
+	if e.GetPathData() != "" {
+		newPathData := fmt.Sprintf("%s/%s.yml", modules.GetUtilsModule().GetAppTemplateDir(), e.GetPathData())
+		if _, err := os.Stat(newPathData); err == nil {
+			e.SetDataPath(newPathData)
+		}
+
 		var mockData []byte
 		mockData, err = os.ReadFile(e.GetPathData())
 		if err != nil {
@@ -326,35 +332,13 @@ func (e *Engine) SetData(key string, data any) {
 	if err != nil {
 		return
 	}
+
 	// force untyped data, yes why not 😱
 	var slice any
 	err = json.Unmarshal(v, &slice)
 	if err != nil {
 		return
 	}
-
-	/*	// get real type of the data with reflect
-		var store []any
-		rf := reflect.TypeOf(slice)
-
-		switch rf.Kind() {
-		// check if the data is a Map (like ~object)
-		case reflect.Slice:
-			store = append(store, slice.([]interface{})...)
-			break
-		//check if the data is a Slice (Like ~array)
-		case reflect.Map:
-			store = append(store, slice)
-			break
-		default:
-			store = append(store, slice)
-		}
-
-		// check if key is already in the data and append the new data
-		found, ok := e.data[key]
-		if ok {
-			found = append(found.([]interface{}), store...)
-		}*/
 
 	// set the data
 	e.data[key] = slice

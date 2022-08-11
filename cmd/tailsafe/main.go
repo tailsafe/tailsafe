@@ -17,7 +17,7 @@ func main() {
 
 	flag.BoolVar(&verbose, "v", false, "Show more information")
 	flag.BoolVar(&workflow, "workflow", false, "Show the processing workflow")
-	flag.StringVar(&data, "data", "", "Set specific data path name")
+	flag.StringVar(&data, "data", "", "Define the path name of the mock data")
 	flag.StringVar(&use, "use", "", "Set use path name")
 	flag.StringVar(&env, "env", "", "environment arguments")
 	flag.Parse()
@@ -41,6 +41,6 @@ func main() {
 		New().
 		SetPath(use).
 		SetEnv(env).
-		SetPathData(data).
+		SetDataPath(data).
 		Run()
 }

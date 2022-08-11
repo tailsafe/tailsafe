@@ -87,14 +87,21 @@ func (s *Step) GetLogLevel() int {
 
 // Resolve resolves value with path into
 func (s *Step) Resolve(path string, data map[string]any) any {
-	if strings.TrimSpace(path) == "" {
-		return path
-	}
-	if !strings.HasSuffix(path, "?") {
+	var re = regexp.MustCompile(`(?m)\${(.*)}`)
+
+	res := re.FindAllStringSubmatch(path, -1)
+	if len(res) == 0 {
 		return path
 	}
 
-	return resolver.Get(path[:len(path)-1], data)
+	if len(res) > 1 {
+		for _, v := range res {
+			path = strings.Replace(path, v[0], fmt.Sprintf("%v", resolver.Get(v[1], data)), -1)
+		}
+		return path
+	}
+
+	return resolver.Get(res[0][1], data)
 }
 func (s *Step) SetEngine(engine tailsafe.EngineInterface) {
 	s.Engine = engine
@@ -298,10 +305,10 @@ func (s *Step) Call() (err error) {
 	modules.Get[tailsafe.EventsInterface]("Events").Trigger(tailsafe.NewActionAfterConfigureStepEvent(s, action))
 
 	// if data mocked !
-	// @todo check if not already set in loop mode
 	mock := s.Engine.GetMockDataByKey(s.GetKey())
 	if mock != nil {
 		s.Engine.SetData(s.GetKey(), mock)
+		s.GetPayload().Set(s.GetKey(), mock)
 		return
 	}
 

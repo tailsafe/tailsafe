@@ -17,3 +17,13 @@ type ActionInterface interface {
 	// GetResult returns the result for the action
 	GetResult() any
 }
+
+type ActionGetter struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+type ActionSetter struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}

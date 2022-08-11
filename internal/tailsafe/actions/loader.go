@@ -5,9 +5,11 @@ import (
 	adapterAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/adapter"
 	datetimeAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/datetime"
 	execAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/exec"
+	foreachAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/foreach"
 	httpAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/http"
 	jsonDecodeAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/jsondecode"
 	jsonEncodeAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/jsonencode"
+	mapAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/map"
 	payloadAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/payload"
 	printAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/print"
 	"github.com/tailsafe/tailsafe/internal/tailsafe/actions/replace"
@@ -41,6 +43,8 @@ func init() {
 	instance.Lock()
 	defer instance.Unlock()
 
+	instance.data["internal/map"] = mapAction.New
+	instance.data["internal/foreach"] = foreachAction.New
 	instance.data["internal/terms"] = termsAction.New
 	instance.data["internal/datetime"] = datetimeAction.New
 	instance.data["internal/replace"] = replaceAction.New
