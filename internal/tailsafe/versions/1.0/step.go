@@ -200,8 +200,6 @@ func (s *Step) GetFailSteps() []tailsafe.StepInterface {
 		s.StepsFailGeneric = append(s.StepsFailGeneric, step)
 	}
 
-	s.hasFailed = true
-
 	return s.StepsFailGeneric
 }
 
@@ -370,13 +368,13 @@ func (s *Step) Call() (err error) {
 
 	err = payload()
 
-	failSteps := s.GetFailSteps()
-	if err != nil && len(failSteps) == 0 {
+	if err != nil && len(s.GetFailSteps()) == 0 {
 		return err.(tailsafe.ErrActionInterface)
 	}
 
-	if err != nil && len(failSteps) != 0 {
-		steps = failSteps
+	if err != nil && len(s.GetFailSteps()) != 0 {
+		steps = s.GetFailSteps()
+		s.hasFailed = true
 	}
 
 	if err == nil && len(s.GetSuccessSteps()) != 0 {

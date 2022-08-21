@@ -2,11 +2,11 @@ package httpaction
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/tailsafe/tailsafe/pkg/tailsafe"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -29,16 +29,21 @@ type HttpAction struct {
 }
 
 func (r *HttpAction) Configure() (err tailsafe.ErrActionInterface) {
-	path := r.Resolve(r.Config.Path, r.GetAll())
-	if path == nil {
-		return tailsafe.CatchStackTrace(r.GetContext(), errors.New("HttpAction: Path is nil"))
+	r.Config.Path = fmt.Sprintf("%v", r.Resolve(r.Config.Path, r.GetAll()))
+
+	if r.Config.Path != "" {
+		//r.Config.Path = url.QueryEscape(r.Config.Path)
+		log.Print(r.Config.Path)
 	}
-	r.Config.Path = path.(string)
+	/*	if path == nil {
+		return tailsafe.CatchStackTrace(r.GetContext(), errors.New("HttpAction: Path is nil"))
+	}*/
+	//r.Config.Path = path.(string)
 	return
 }
 
 func (r *HttpAction) Execute() (err tailsafe.ErrActionInterface) {
-	requestURL := fmt.Sprintf("%s%s", r.Config.URL, r.Config.Path)
+	requestURL := fmt.Sprintf("%s%s", r.Resolve(r.Config.URL, r.GetAll()), r.Config.Path)
 
 	var payload io.Reader
 	switch r.Config.Headers["Content-Type"] {
