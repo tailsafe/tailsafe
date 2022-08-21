@@ -11,6 +11,9 @@ type Config struct {
 	Use   any    `json:"use"`
 	Key   string `json:"key"`
 	Value any    `json:"value"`
+
+	// if true, value append in the slice.
+	One2Many bool `json:"one2many"`
 }
 
 type MapAction struct {

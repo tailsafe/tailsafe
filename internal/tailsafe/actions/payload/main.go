@@ -9,9 +9,9 @@ type Config struct {
 
 type Payload struct {
 	tailsafe.StepInterface
-	Config  map[string]any `json:"year"`
-	Payload tailsafe.DataInterface
-	_Data   map[string]interface{}
+	tailsafe.DataInterface
+
+	Config map[string]any
 }
 
 func (p *Payload) Configure() (err tailsafe.ErrActionInterface) {
@@ -32,7 +32,7 @@ func (p *Payload) GetConfig() any {
 	return &p.Config
 }
 func (p *Payload) SetPayload(data tailsafe.DataInterface) {
-	p.Payload = data
+	p.DataInterface = data
 }
 func New(step tailsafe.StepInterface) tailsafe.ActionInterface {
 	p := new(Payload)

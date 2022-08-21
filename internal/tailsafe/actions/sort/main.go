@@ -7,7 +7,12 @@ import (
 )
 
 type Config struct {
-	Use string `json:"use"`
+	ActionSetter tailsafe.ActionSetter `json:"action-setter"`
+	ActionGetter tailsafe.ActionGetter `json:"action-getter"`
+
+	Result struct {
+		ActionGetter tailsafe.ActionGetter `json:"action-getter"`
+	} `json:"result"`
 }
 type Sort struct {
 	tailsafe.StepInterface
@@ -29,11 +34,11 @@ func (s *Sort) GetResult() any {
 
 func (s *Sort) Execute() (err tailsafe.ErrActionInterface) {
 
-	s.Payload = s.Resolve(s.Config.Use, s.GetAll())
+	s.Payload = s.Resolve(s.Config.ActionGetter.Value, s.GetAll())
 
 	slice, ok := s.Payload.([]interface{})
 	if !ok {
-		return tailsafe.CatchStackTrace(s.GetContext(), errors.New("Sort: Payload is not array"))
+		return tailsafe.CatchStackTrace(s.GetContext(), errors.New("sort: Payload is not array"))
 	}
 
 	slices.SortStableFunc[any](slice, func(i, j any) bool {
@@ -47,7 +52,7 @@ func (s *Sort) Execute() (err tailsafe.ErrActionInterface) {
 			payload.Set(k, v)
 		}
 
-		payload.Set(tailsafe.THIS, map[string]interface{}{"a": i, "b": j})
+		payload.Set(s.Config.ActionSetter.Key, map[string]interface{}{"a": i, "b": j})
 
 		err = s.Next(payload)
 
@@ -55,7 +60,7 @@ func (s *Sort) Execute() (err tailsafe.ErrActionInterface) {
 			return false
 		}
 
-		res := payload.Get(tailsafe.RETURN)
+		res := payload.Get(s.Config.Result.ActionGetter.Key)
 		ok, returnValue := res.(bool)
 		if !ok {
 			return false

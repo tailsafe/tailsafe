@@ -15,8 +15,11 @@ type StepInterface interface {
 	GetWait() []string
 
 	GetSteps() []StepInterface
+	GetNextSteps() []StepInterface
 	GetSuccessSteps() []StepInterface
 	GetFailSteps() []StepInterface
+
+	HasFailed() bool
 
 	GetEngine() EngineInterface
 	GetContext() context.Context

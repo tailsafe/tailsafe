@@ -24,7 +24,7 @@ func init() {
 	}
 
 	UtilsInstance.appDir = filepath.Join(home, ".tailsafe")
-	UtilsInstance.appDirAction = filepath.Join(home, ".tailsafe", "action")
+	UtilsInstance.appDirAction = filepath.Join(home, ".tailsafe", "actions")
 	UtilsInstance.appDirTemplate = filepath.Join(home, ".tailsafe", "template")
 
 	err = os.MkdirAll(UtilsInstance.appDir, os.ModePerm)

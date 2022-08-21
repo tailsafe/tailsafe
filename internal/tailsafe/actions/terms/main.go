@@ -8,9 +8,14 @@ import (
 )
 
 type Config struct {
-	A        string `json:"a"`
-	B        string `json:"b"`
-	Operator string `json:"operator"`
+	ActionSetter tailsafe.ActionSetter `json:"action-setter"`
+	NoError      bool                  `json:"no-error"`
+	Terms        []struct {
+		A            string                `json:"a"`
+		B            string                `json:"b"`
+		Operator     string                `json:"operator"`
+		ActionGetter tailsafe.ActionGetter `json:"action-getter"`
+	}
 }
 
 type Number interface {
@@ -30,47 +35,53 @@ type If struct {
 	tailsafe.StepInterface
 	tailsafe.DataInterface
 
-	Config []Config
-	Result any
+	Config Config
+	Result bool
 }
 
 func (i *If) Configure() (err tailsafe.ErrActionInterface) {
-	if i.Config == nil {
+	if i.Config.Terms == nil {
 		return tailsafe.CatchStackTrace(i.GetContext(), errors.New("if: Config has not been set"))
 	}
-	if len(i.Config) == 0 {
+	if len(i.Config.Terms) == 0 {
 		return tailsafe.CatchStackTrace(i.GetContext(), errors.New("if: Config is empty"))
 	}
 	return
 }
 
 // Execute executes the action
-func (i *If) Execute() tailsafe.ErrActionInterface {
+func (i *If) Execute() (err tailsafe.ErrActionInterface) {
 	defer func() {
-		i.Set(tailsafe.RETURN, i.Result)
+		i.Set(i.Config.ActionSetter.Key, i.Result)
 	}()
-	for _, c := range i.Config {
+	for _, c := range i.Config.Terms {
 		switch c.Operator {
 		case "==", "!=":
 			switch c.Operator {
 			case "==":
-				if i.Resolve(c.A, map[string]any{"this": i.Get(tailsafe.THIS)}) == i.Resolve(c.B, map[string]any{"this": i.Get(tailsafe.THIS)}) {
+				a := i.Resolve(c.A, i.GetAll())
+				b := i.Resolve(c.B, i.GetAll())
+				if a == b {
 					i.Result = true
+					return
+				}
+				if !i.Config.NoError {
+					err = tailsafe.CatchStackTrace(i.GetContext(), errors.New(fmt.Sprintf("if: %v == %v is false", a, b)))
 				}
 				break
 			case "!=":
-				if i.Resolve(c.A, map[string]any{"this": i.Get(tailsafe.THIS)}) != i.Resolve(c.B, map[string]any{"this": i.Get(tailsafe.THIS)}) {
+				if i.Resolve(c.A, i.GetAll()) != i.Resolve(c.B, i.GetAll()) {
 					i.Result = true
 				}
 				break
 			}
 			break
 		case ">", "<", ">=", "<=":
-			aV, err := i.toFloat64(i.Resolve(c.A, map[string]any{"this": i.Get(tailsafe.THIS)}))
+			aV, err := i.toFloat64(i.Resolve(c.A, i.GetAll()))
 			if err != nil {
 				return tailsafe.CatchStackTrace(i.GetContext(), err)
 			}
-			bV, err := i.toFloat64(i.Resolve(c.B, map[string]any{"this": i.Get(tailsafe.THIS)}))
+			bV, err := i.toFloat64(i.Resolve(c.B, i.GetAll()))
 			if err != nil {
 				return tailsafe.CatchStackTrace(i.GetContext(), err)
 			}
@@ -99,7 +110,7 @@ func (i *If) Execute() tailsafe.ErrActionInterface {
 			}
 		}
 	}
-	return nil
+	return
 }
 
 func (i *If) toFloat64(value any) (float64, error) {
@@ -118,6 +129,6 @@ func (i *If) SetPayload(data tailsafe.DataInterface) {
 func New(step tailsafe.StepInterface) tailsafe.ActionInterface {
 	p := new(If)
 	p.StepInterface = step
-	p.Config = []Config{}
+	p.Config = Config{}
 	return p
 }

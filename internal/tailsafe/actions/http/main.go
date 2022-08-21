@@ -8,16 +8,16 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
 type Config struct {
-	Headers struct {
-		Accept string `json:"accept"`
-	} `json:"headers"`
-	Method string `json:"method"`
-	Path   string `json:"path"`
-	URL    string `json:"url"`
+	Headers map[string]string `json:"headers"`
+	Method  string            `json:"method"`
+	Path    string            `json:"path"`
+	URL     string            `json:"url"`
+	Body    any               `json:"body"`
 }
 
 type HttpAction struct {
@@ -39,12 +39,32 @@ func (r *HttpAction) Configure() (err tailsafe.ErrActionInterface) {
 
 func (r *HttpAction) Execute() (err tailsafe.ErrActionInterface) {
 	requestURL := fmt.Sprintf("%s%s", r.Config.URL, r.Config.Path)
-	req, httpErr := http.NewRequest(r.Config.Method, requestURL, nil)
+
+	var payload io.Reader
+	switch r.Config.Headers["Content-Type"] {
+	case "application/x-www-form-urlencoded":
+
+		values, ok := r.Config.Body.(map[string]any)
+		if !ok {
+			return
+		}
+
+		data := url.Values{}
+		for k, v := range values {
+			data.Add(k, fmt.Sprintf("%v", r.Resolve(fmt.Sprintf("%v", v), r.GetAll())))
+		}
+
+		payload = strings.NewReader(data.Encode())
+	}
+
+	req, httpErr := http.NewRequest(r.Config.Method, requestURL, payload)
 	if httpErr != nil {
 		return tailsafe.CatchStackTrace(r.GetContext(), err)
 	}
 
-	req.Header.Add("Accept", r.Config.Headers.Accept)
+	for k, v := range r.Config.Headers {
+		req.Header.Set(k, r.Resolve(v, r.GetAll()).(string))
+	}
 
 	client := http.Client{}
 
@@ -79,6 +99,7 @@ func (r *HttpAction) Execute() (err tailsafe.ErrActionInterface) {
 			return tailsafe.CatchStackTrace(r.GetContext(), err)
 		}
 		r.data["body"] = data
+
 		break
 	}
 	return

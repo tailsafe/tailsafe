@@ -10,6 +10,7 @@ import (
 	"github.com/tailsafe/tailsafe/internal/tailsafe/resolver"
 	"github.com/tailsafe/tailsafe/pkg/tailsafe"
 	"os"
+	"reflect"
 	"regexp"
 	"strings"
 	"sync"
@@ -33,17 +34,25 @@ type Step struct {
 	StepsGeneric []tailsafe.StepInterface
 	Steps        []*Step `yaml:"steps"`
 
+	StepsNextGeneric []tailsafe.StepInterface
+	StepsNext        []*Step `yaml:"if-action-next"`
+
 	StepsSuccessGeneric []tailsafe.StepInterface
 	StepsSuccess        []*Step `yaml:"if-action-success"`
 
 	StepsFailGeneric []tailsafe.StepInterface
 	StepsFail        []*Step `yaml:"if-action-fail"`
+	hasFailed        bool
 
 	Async   bool     `yaml:"async"`
 	Wait    []string `yaml:"wait"`
 	Payload tailsafe.DataInterface
 
 	NextIsAlreadyCalled bool
+}
+
+func (s *Step) HasFailed() bool {
+	return s.hasFailed
 }
 
 func (s *Step) SetTitle(title string) tailsafe.StepInterface {
@@ -87,21 +96,29 @@ func (s *Step) GetLogLevel() int {
 
 // Resolve resolves value with path into
 func (s *Step) Resolve(path string, data map[string]any) any {
-	var re = regexp.MustCompile(`(?m)\${(.*)}`)
+	var re = regexp.MustCompile(`(?m)\${([a-zA-Z-_0-9.]+)}`)
 
 	res := re.FindAllStringSubmatch(path, -1)
 	if len(res) == 0 {
 		return path
 	}
 
-	if len(res) > 1 {
-		for _, v := range res {
-			path = strings.Replace(path, v[0], fmt.Sprintf("%v", resolver.Get(v[1], data)), -1)
+	for _, v := range res {
+		result := resolver.Get(v[1], data)
+
+		if result == nil {
+			return result
 		}
-		return path
+
+		rf := reflect.TypeOf(result)
+		if rf.Kind() == reflect.Map || rf.Kind() == reflect.Slice {
+			return result
+		}
+
+		path = strings.Replace(path, v[0], fmt.Sprintf("%v", result), -1)
 	}
 
-	return resolver.Get(res[0][1], data)
+	return s.Resolve(path, data)
 }
 func (s *Step) SetEngine(engine tailsafe.EngineInterface) {
 	s.Engine = engine
@@ -113,38 +130,12 @@ func (s *Step) GetContext() context.Context {
 	return s.Context
 }
 func (s *Step) Next(payload tailsafe.DataInterface) tailsafe.ErrActionInterface {
-	// if action use next if-success or if-fail
-	s.NextIsAlreadyCalled = true
-
-	return s._Next(payload, nil, true)
-}
-func (s *Step) _Next(payload tailsafe.DataInterface, err error, fromAction bool) tailsafe.ErrActionInterface {
-	if !fromAction && s.NextIsAlreadyCalled {
-		if err == nil {
-			return nil
-		}
-		return err.(tailsafe.ErrActionInterface)
-	}
 	s.Engine.EntrySubStage()
 	defer func() {
 		s.Engine.ExitSubStage()
 	}()
-	var steps []tailsafe.StepInterface
 
-	if err != nil && len(s.GetFailSteps()) == 0 {
-		return err.(tailsafe.ErrActionInterface)
-	}
-
-	if err != nil && len(s.GetFailSteps()) != 0 {
-		steps = s.GetFailSteps()
-	}
-
-	if err == nil && len(s.GetSuccessSteps()) != 0 {
-		steps = s.GetSuccessSteps()
-	}
-
-	for _, sub := range steps {
-
+	for _, sub := range s.GetNextSteps() {
 		sub.SetContext(s.Context)
 		sub.SetPayload(payload)
 		sub.SetEngine(s.Engine)
@@ -179,21 +170,38 @@ func (s *Step) GetSteps() []tailsafe.StepInterface {
 	return s.StepsGeneric
 }
 
-func (s *Step) GetSuccessSteps() []tailsafe.StepInterface {
-	if len(s.StepsSuccessGeneric) == 0 {
-		for _, step := range s.StepsSuccess {
-			s.StepsSuccessGeneric = append(s.StepsSuccessGeneric, step)
+func (s *Step) GetNextSteps() []tailsafe.StepInterface {
+	if len(s.StepsNextGeneric) == 0 {
+		for _, step := range s.StepsNext {
+			s.StepsNextGeneric = append(s.StepsNextGeneric, step)
 		}
 	}
+	return s.StepsNextGeneric
+}
+
+func (s *Step) GetSuccessSteps() []tailsafe.StepInterface {
+	if len(s.StepsSuccessGeneric) != 0 {
+		return s.StepsSuccessGeneric
+	}
+
+	for _, step := range s.StepsSuccess {
+		s.StepsSuccessGeneric = append(s.StepsSuccessGeneric, step)
+	}
+
 	return s.StepsSuccessGeneric
 }
 
 func (s *Step) GetFailSteps() []tailsafe.StepInterface {
-	if len(s.StepsFailGeneric) == 0 {
-		for _, step := range s.StepsFail {
-			s.StepsFailGeneric = append(s.StepsFailGeneric, step)
-		}
+	if len(s.StepsFailGeneric) != 0 {
+		return s.StepsFailGeneric
 	}
+
+	for _, step := range s.StepsFail {
+		s.StepsFailGeneric = append(s.StepsFailGeneric, step)
+	}
+
+	s.hasFailed = true
+
 	return s.StepsFailGeneric
 }
 
@@ -304,19 +312,18 @@ func (s *Step) Call() (err error) {
 	}
 	modules.Get[tailsafe.EventsInterface]("Events").Trigger(tailsafe.NewActionAfterConfigureStepEvent(s, action))
 
-	// if data mocked !
-	mock := s.Engine.GetMockDataByKey(s.GetKey())
-	if mock != nil {
-		s.Engine.SetData(s.GetKey(), mock)
-		s.GetPayload().Set(s.GetKey(), mock)
-		return
-	}
-
 	if s.IsAsync() {
 		modules.Get[tailsafe.EventsInterface]("Events").Trigger(tailsafe.NewActionIsAsyncEvent(s))
 	}
 
 	payload := func() (err error) {
+		// if data mocked !
+		mock := s.Engine.GetMockDataByKey(s.GetKey())
+		if mock != nil {
+			s.Engine.SetData(s.GetKey(), mock)
+			s.GetPayload().Set(s.GetKey(), mock)
+			return
+		}
 		// execute the action
 		err = action.Execute()
 		if err != nil {
@@ -359,5 +366,34 @@ func (s *Step) Call() (err error) {
 		return
 	}
 
-	return s._Next(s.GetPayload(), payload(), false)
+	var steps []tailsafe.StepInterface
+
+	err = payload()
+
+	failSteps := s.GetFailSteps()
+	if err != nil && len(failSteps) == 0 {
+		return err.(tailsafe.ErrActionInterface)
+	}
+
+	if err != nil && len(failSteps) != 0 {
+		steps = failSteps
+	}
+
+	if err == nil && len(s.GetSuccessSteps()) != 0 {
+		steps = s.GetSuccessSteps()
+	}
+
+	for _, sub := range steps {
+
+		sub.SetContext(s.Context)
+		sub.SetPayload(s.GetPayload())
+		sub.SetEngine(s.Engine)
+
+		err = sub.Call()
+		if err != nil {
+			return tailsafe.CatchStackTrace(s.GetContext(), err)
+		}
+	}
+
+	return err
 }

@@ -13,6 +13,7 @@ import (
 	payloadAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/payload"
 	printAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/print"
 	"github.com/tailsafe/tailsafe/internal/tailsafe/actions/replace"
+	setterAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/setter"
 	sortAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/sort"
 	templateAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/template"
 	termsAction "github.com/tailsafe/tailsafe/internal/tailsafe/actions/terms"
@@ -43,6 +44,7 @@ func init() {
 	instance.Lock()
 	defer instance.Unlock()
 
+	instance.data["internal/setter"] = setterAction.New
 	instance.data["internal/map"] = mapAction.New
 	instance.data["internal/foreach"] = foreachAction.New
 	instance.data["internal/terms"] = termsAction.New

@@ -311,6 +311,10 @@ func (e *Engine) Run() {
 		if err != nil {
 			return
 		}
+
+		if step.HasFailed() {
+			return
+		}
 	}
 
 	// Wait all the actions to finish
@@ -360,7 +364,7 @@ func (e *Engine) ExtractGlobal(required []string) map[string]any {
 // InterfaceSlice helps to convert a slice of interfaces to a slice of a specific type
 // returns an error if the type is not supported
 // use generic type to avoid type checking
-func InterfaceSlice[t any](slice interface{}) (data []t, err error) {
+func InterfaceSlice[t any](slice any) (data []t, err error) {
 	s := reflect.ValueOf(slice)
 	if s.Kind() != reflect.Slice {
 		err = errors.New(fmt.Sprintf("%s is not a slice", reflect.TypeOf(slice)))
