@@ -6,7 +6,6 @@ import (
 	"github.com/tailsafe/tailsafe/pkg/tailsafe"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -16,6 +15,7 @@ type Config struct {
 	Headers map[string]string `json:"headers"`
 	Method  string            `json:"method"`
 	Path    string            `json:"path"`
+	Params  string            `json:"params"`
 	URL     string            `json:"url"`
 	Body    any               `json:"body"`
 }
@@ -29,21 +29,19 @@ type HttpAction struct {
 }
 
 func (r *HttpAction) Configure() (err tailsafe.ErrActionInterface) {
+	r.Config.Params = fmt.Sprintf("%v", r.Resolve(r.Config.Params, r.GetAll()))
+	r.Config.URL = fmt.Sprintf("%v", r.Resolve(r.Config.URL, r.GetAll()))
 	r.Config.Path = fmt.Sprintf("%v", r.Resolve(r.Config.Path, r.GetAll()))
 
-	if r.Config.Path != "" {
-		//r.Config.Path = url.QueryEscape(r.Config.Path)
-		log.Print(r.Config.Path)
+	if r.Config.Params != "" {
+		r.Config.Params = url.PathEscape(r.Config.Params)
 	}
-	/*	if path == nil {
-		return tailsafe.CatchStackTrace(r.GetContext(), errors.New("HttpAction: Path is nil"))
-	}*/
-	//r.Config.Path = path.(string)
+
 	return
 }
 
 func (r *HttpAction) Execute() (err tailsafe.ErrActionInterface) {
-	requestURL := fmt.Sprintf("%s%s", r.Resolve(r.Config.URL, r.GetAll()), r.Config.Path)
+	requestURL := fmt.Sprintf("%s%s%s", r.Config.URL, r.Config.Path, r.Config.Params)
 
 	var payload io.Reader
 	switch r.Config.Headers["Content-Type"] {
@@ -64,7 +62,7 @@ func (r *HttpAction) Execute() (err tailsafe.ErrActionInterface) {
 
 	req, httpErr := http.NewRequest(r.Config.Method, requestURL, payload)
 	if httpErr != nil {
-		return tailsafe.CatchStackTrace(r.GetContext(), err)
+		return tailsafe.CatchStackTrace(r.GetContext(), httpErr)
 	}
 
 	for k, v := range r.Config.Headers {
