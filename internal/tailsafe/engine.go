@@ -2,9 +2,9 @@ package tailsafe
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/tailsafe/tailsafe/internal/tailsafe/data"
 	"github.com/tailsafe/tailsafe/internal/tailsafe/modules"
 	"github.com/tailsafe/tailsafe/internal/tailsafe/versions"
 	"github.com/tailsafe/tailsafe/pkg/tailsafe"
@@ -24,15 +24,16 @@ const (
 )
 
 type Engine struct {
-	// context of the payload
+	tailsafe.DataInterface
+
 	ctx      context.Context
 	path     string
 	pathData string
 	env      string
 
 	// data processing
-	data     map[string]interface{}
-	mockData map[string]interface{}
+	data     map[string]any
+	mockData map[string]any
 	template versions.TemplateInterface
 	mu       *sync.Mutex
 
@@ -40,7 +41,6 @@ type Engine struct {
 	childLevel int
 	stageLevel int
 	logColor   bool
-	// namespaces []string
 
 	modules map[string]any
 }
@@ -97,11 +97,13 @@ func New() tailsafe.EngineInterface {
 	// set default context
 	p.ctx = context.Background()
 	// initialize default map
-	p.data = make(map[string]interface{})
+	p.data = make(map[string]any)
 	// initialize default mock data
-	p.mockData = make(map[string]interface{})
+	p.mockData = make(map[string]any)
 	// initialize default mutex
 	p.mu = new(sync.Mutex)
+	// initialize default payload
+	p.DataInterface = data.NewPayload()
 
 	var cancel context.CancelFunc
 	_, cancel = context.WithCancel(p.ctx)
@@ -155,12 +157,12 @@ func (e *Engine) GetMutex() *sync.Mutex {
 }
 
 // GetData returns the data of the payload
-func (e *Engine) GetData() map[string]interface{} {
+func (e *Engine) GetData() map[string]any {
 	return e.data
 }
 
 // GetMockData returns the mock data of the payload
-func (e *Engine) GetMockData() map[string]interface{} {
+func (e *Engine) GetMockData() map[string]any {
 	return e.mockData
 }
 
@@ -176,7 +178,7 @@ func (e *Engine) Parse() (err error) {
 	if err != nil {
 		return
 	}
-	var template map[string]interface{}
+	var template map[string]any
 	err = yaml.Unmarshal(data, &template)
 	if err != nil {
 		return
@@ -211,7 +213,7 @@ func (e *Engine) Parse() (err error) {
 		if err != nil {
 			return
 		}
-		var dataTemplate map[string]interface{}
+		var dataTemplate map[string]any
 		err = yaml.Unmarshal(mockData, &dataTemplate)
 		if err != nil {
 			return
@@ -272,7 +274,7 @@ func (e *Engine) Run() {
 			step := e.template.NewStep()
 			step.SetUse("internal/exec")
 			step.SetTitle("[DEV] Build Action")
-			step.SetConfig(map[string]interface{}{
+			step.SetConfig(map[string]any{
 				"command": []string{
 					"go",
 					"build",
@@ -293,7 +295,8 @@ func (e *Engine) Run() {
 		return
 	}
 
-	e.SetData("args", args)
+	// @todo search a better idea for key wording please :D
+	e.Set("SYSTEM_ARGS", args, true)
 
 	// convert the data to the correct type for iteration
 	steps, err := InterfaceSlice[tailsafe.StepInterface](e.template.GetSteps())
@@ -320,32 +323,6 @@ func (e *Engine) Run() {
 	// Wait all the actions to finish
 	modules.GetAsyncQueue().WaitAll()
 	return
-}
-
-// SetData sets the data
-func (e *Engine) SetData(key string, data any) {
-	// if data is null, return
-	if data == nil {
-		return
-	}
-	// secure thread access
-	e.GetMutex().Lock()
-	defer e.GetMutex().Unlock()
-
-	v, err := json.Marshal(data)
-	if err != nil {
-		return
-	}
-
-	// force untyped data, yes why not 😱
-	var slice any
-	err = json.Unmarshal(v, &slice)
-	if err != nil {
-		return
-	}
-
-	// set the data
-	e.data[key] = slice
 }
 
 // ExtractGlobal extract required data from the global context

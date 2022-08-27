@@ -6,8 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/tailsafe/tailsafe/internal/tailsafe/actions"
+	"github.com/tailsafe/tailsafe/internal/tailsafe/data"
+	"github.com/tailsafe/tailsafe/internal/tailsafe/data/getter"
 	"github.com/tailsafe/tailsafe/internal/tailsafe/modules"
-	"github.com/tailsafe/tailsafe/internal/tailsafe/resolver"
 	"github.com/tailsafe/tailsafe/pkg/tailsafe"
 	"os"
 	"reflect"
@@ -29,19 +30,19 @@ type Step struct {
 	LogLevel string   `yaml:"log-level"`
 	Config   any      `yaml:"config"`
 	Key      string   `yaml:"key"`
-	Needs    []string `yaml:"needs"`
+	Required []string `yaml:"required"`
 
 	StepsGeneric []tailsafe.StepInterface
 	Steps        []*Step `yaml:"steps"`
 
 	StepsNextGeneric []tailsafe.StepInterface
-	StepsNext        []*Step `yaml:"if-action-next"`
+	StepsNext        []*Step `yaml:"on-next"`
 
 	StepsSuccessGeneric []tailsafe.StepInterface
-	StepsSuccess        []*Step `yaml:"if-action-success"`
+	StepsSuccess        []*Step `yaml:"on-success"`
 
 	StepsFailGeneric []tailsafe.StepInterface
-	StepsFail        []*Step `yaml:"if-action-fail"`
+	StepsFail        []*Step `yaml:"on-fail"`
 	hasFailed        bool
 
 	Async   bool     `yaml:"async"`
@@ -96,7 +97,7 @@ func (s *Step) GetLogLevel() int {
 
 // Resolve resolves value with path into
 func (s *Step) Resolve(path string, data map[string]any) any {
-	var re = regexp.MustCompile(`(?m)\${([a-zA-Z-_0-9.]+)}`)
+	var re = regexp.MustCompile(`(?m)\${([a-zA-Z-_0-9.[\]]+)}`)
 
 	res := re.FindAllStringSubmatch(path, -1)
 	if len(res) == 0 {
@@ -104,7 +105,7 @@ func (s *Step) Resolve(path string, data map[string]any) any {
 	}
 
 	for _, v := range res {
-		result := resolver.Get(v[1], data)
+		result := getter.Get(v[1], data)
 
 		if result == nil {
 			return result
@@ -262,7 +263,7 @@ func (s *Step) Call() (err error) {
 	modules.Get[tailsafe.EventsInterface]("Events").Trigger(tailsafe.NewActionBeforeConfigureStepEvent(s))
 
 	if s.Payload == nil {
-		s.Payload = tailsafe.NewPayload()
+		s.Payload = data.NewPayload()
 	}
 
 	// only set the key if it is not empty
@@ -294,10 +295,11 @@ func (s *Step) Call() (err error) {
 	if err != nil {
 		return
 	}
+
 	// Inject need into current payload
-	need := s.Engine.ExtractGlobal(s.Needs)
+	need := s.Engine.ExtractGlobal(s.Required)
 	for key, value := range need {
-		s.GetPayload().Set(key, value)
+		s.GetPayload().Set(key, value, true)
 	}
 
 	// inject into action
@@ -318,8 +320,8 @@ func (s *Step) Call() (err error) {
 		// if data mocked !
 		mock := s.Engine.GetMockDataByKey(s.GetKey())
 		if mock != nil {
-			s.Engine.SetData(s.GetKey(), mock)
-			s.GetPayload().Set(s.GetKey(), mock)
+			s.Engine.Set(s.GetKey(), mock, true)
+			s.GetPayload().Set(s.GetKey(), mock, true)
 			return
 		}
 		// execute the action
@@ -338,10 +340,10 @@ func (s *Step) Call() (err error) {
 			}
 
 			// Set global data
-			s.Engine.SetData(key, result)
+			s.GetEngine().Set(key, result, true)
 
 			// Set payload state data
-			s.GetPayload().Set(key, result)
+			s.GetPayload().Set(key, result, true)
 
 			modules.Get[tailsafe.EventsInterface]("Events").Trigger(tailsafe.NewActionHasStoringDataEvent(s, result))
 		}

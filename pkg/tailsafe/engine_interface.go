@@ -25,15 +25,15 @@ type Utils interface {
 
 // EngineInterface represents a engine in the workflow
 type EngineInterface interface {
+	DataInterface
+
 	ExtractGlobal(required []string) map[string]any
-	SetData(key string, data any)
 
 	SetPath(path string) EngineInterface
 	SetEnv(env string) EngineInterface
 	SetDataPath(path string) EngineInterface
 
 	Run()
-
 	/* Mock Payload process */
 
 	GetMockDataByKey(key string) any

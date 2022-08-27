@@ -19,13 +19,13 @@ type ActionInterface interface {
 }
 
 type ActionGetter struct {
-	Key      string `json:"key"`
-	Value    string `json:"value"`
-	Resolver bool   `json:"resolver"`
+	Key   string `json:"key"`
+	Value string `json:"value"`
 }
 
 type ActionSetter struct {
-	Key      string `json:"key"`
-	Value    string `json:"value"`
-	Resolver bool   `json:"resolver"`
+	Key   string `json:"key"`
+	Value string `json:"value"`
+
+	Override bool `json:"override"`
 }

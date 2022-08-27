@@ -2,7 +2,6 @@ package setuphelper
 
 import (
 	"context"
-	"github.com/tailsafe/tailsafe/internal/tailsafe/resolver"
 	"github.com/tailsafe/tailsafe/pkg/tailsafe"
 	"strings"
 )
@@ -19,6 +18,16 @@ type Step struct {
 	wait     []string
 	steps    []Step
 	payload  map[string]any
+}
+
+func (s *Step) GetNextSteps() []tailsafe.StepInterface {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *Step) HasFailed() bool {
+	//TODO implement me
+	panic("implement me")
 }
 
 func NewStepTesting() tailsafe.StepInterface {
@@ -91,7 +100,7 @@ func (s *Step) Resolve(path string, data map[string]any) any {
 		return path
 	}
 
-	return resolver.Get(path[:len(path)-1], data)
+	return getter.Get(path[:len(path)-1], data)
 }
 
 func (s *Step) IsAsync() bool {

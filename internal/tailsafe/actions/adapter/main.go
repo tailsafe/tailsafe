@@ -92,7 +92,7 @@ func (ta *AdapterAction) parseArray(obj *ObjectType) (data []any, err tailsafe.E
 	if rf != reflect.Slice {
 		return data, tailsafe.CatchStackTrace(ta.GetContext(), fmt.Errorf("%v (%s) is not a slice", d, rf.String()))
 	}
-	tmp := ta.Get(tailsafe.THIS)
+	tmp := ta.Get("this")
 
 	s := reflect.ValueOf(d)
 	if !s.IsValid() {
@@ -100,15 +100,15 @@ func (ta *AdapterAction) parseArray(obj *ObjectType) (data []any, err tailsafe.E
 	}
 	for i := 0; i < s.Len(); i++ {
 		this := s.Index(i).Interface()
-		ta.Set(tailsafe.THIS, this)
+		ta.Set("this", this, true)
 
 		if len(obj.Items) > 0 {
 			newObject := make(map[string]any)
-			err := ta.parseProperties(map[string]any{tailsafe.THIS: obj.Items}, newObject)
+			err := ta.parseProperties(map[string]any{"this": obj.Items}, newObject)
 			if err != nil {
 				return data, tailsafe.CatchStackTrace(ta.GetContext(), err)
 			}
-			data = append(data, newObject[tailsafe.THIS])
+			data = append(data, newObject["this"])
 			continue
 		}
 
@@ -121,7 +121,7 @@ func (ta *AdapterAction) parseArray(obj *ObjectType) (data []any, err tailsafe.E
 		data = append(data, newObject)
 	}
 
-	ta.Set(tailsafe.THIS, tmp)
+	ta.Set("this", tmp, true)
 	return
 }
 func (ta *AdapterAction) parseProperties(properties map[string]any, dst map[string]any) tailsafe.ErrActionInterface {

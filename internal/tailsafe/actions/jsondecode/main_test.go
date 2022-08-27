@@ -3,6 +3,7 @@ package jsonDecodeAction
 import (
 	"encoding/json"
 	"github.com/stretchr/testify/assert"
+	"github.com/tailsafe/tailsafe/internal/tailsafe/data"
 	"github.com/tailsafe/tailsafe/pkg/tailsafe"
 	"github.com/tailsafe/tailsafe/pkg/tailsafe/setuphelper"
 	"testing"
@@ -50,7 +51,7 @@ func TestJsonEncodeAction_Execute(t *testing.T) {
 
 		cfg.(*Config).Value = `{"value":"test"}`
 
-		action.SetPayload(tailsafe.NewPayload())
+		action.SetPayload(data.NewPayload())
 
 		err := action.Configure()
 		assert.Nil(t, err)
@@ -67,7 +68,7 @@ func TestJsonEncodeAction_Execute(t *testing.T) {
 
 		cfg.(*Config).Value = `value?`
 
-		payload := tailsafe.NewPayload()
+		payload := data.NewPayload()
 		payload.Set("value", `{"value":"test"}`)
 
 		action.SetPayload(payload)
@@ -86,7 +87,7 @@ func TestJsonEncodeAction_Execute(t *testing.T) {
 
 		cfg.(*Config).Value = `{{ value }}`
 
-		payload := tailsafe.NewPayload()
+		payload := data.NewPayload()
 		payload.Set("{{ value }}", map[string]interface{}{"value": "test"})
 
 		action.SetPayload(payload)
@@ -106,7 +107,7 @@ func TestJsonEncodeAction_Execute(t *testing.T) {
 
 		cfg.(*Config).Value = `{{ value }}`
 
-		payload := tailsafe.NewPayload()
+		payload := data.NewPayload()
 		payload.Set("{{ value }}", "test")
 
 		action.SetPayload(payload)

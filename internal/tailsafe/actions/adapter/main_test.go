@@ -2,6 +2,7 @@ package adapteraction
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/tailsafe/tailsafe/internal/tailsafe/data"
 	"github.com/tailsafe/tailsafe/pkg/tailsafe"
 	"github.com/tailsafe/tailsafe/pkg/tailsafe/setuphelper"
 	"gopkg.in/yaml.v3"
@@ -50,7 +51,7 @@ func TestAdapterAction_ExecuteWithObjectConfig(t *testing.T) {
 		return
 	}
 
-	payload := tailsafe.NewPayload()
+	payload := data.NewPayload()
 	payload.Set("object", map[string]interface{}{
 		"number":   0,
 		"string":   "test",
@@ -101,7 +102,7 @@ func TestAdapterAction_ExecuteWithObjectConfigAndEmptyPayload(t *testing.T) {
 		return
 	}
 
-	payload := tailsafe.NewPayload()
+	payload := data.NewPayload()
 	action.SetPayload(payload)
 
 	err = action.Configure()
@@ -137,7 +138,7 @@ func TestAdapterAction_ExecuteWithArrayConfig(t *testing.T) {
 		return
 	}
 
-	payload := tailsafe.NewPayload()
+	payload := data.NewPayload()
 	payload.Set("global", map[string]interface{}{
 		"number":   999,
 		"string":   "test",
@@ -194,7 +195,7 @@ func TestAdapterAction_ExecuteWithNoResolveArray(t *testing.T) {
 		return
 	}
 
-	payload := tailsafe.NewPayload()
+	payload := data.NewPayload()
 	action.SetPayload(payload)
 
 	err = action.Configure()
@@ -233,7 +234,7 @@ func TestAdapterAction_ExecuteArrayBadType(t *testing.T) {
 		return
 	}
 
-	payload := tailsafe.NewPayload()
+	payload := data.NewPayload()
 	payload.Set("global", map[string]interface{}{
 		"array": "test",
 	})
@@ -275,7 +276,7 @@ func TestAdapterAction_ExecuteWithBadTypeForType(t *testing.T) {
 		return
 	}
 
-	payload := tailsafe.NewPayload()
+	payload := data.NewPayload()
 	payload.Set("global", map[string]interface{}{
 		"number":   999,
 		"string":   "test",

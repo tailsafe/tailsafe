@@ -1,4 +1,4 @@
-package setterAction
+package setAction
 
 import (
 	"github.com/tailsafe/tailsafe/pkg/tailsafe"
@@ -10,14 +10,14 @@ type Config struct {
 	ActionSetter tailsafe.ActionSetter `json:"action-setters"`
 }
 
-type Setter struct {
+type Set struct {
 	tailsafe.StepInterface
 	tailsafe.DataInterface
 
 	Config *Config
 }
 
-func (s *Setter) Configure() (err tailsafe.ErrActionInterface) {
+func (s *Set) Configure() (err tailsafe.ErrActionInterface) {
 	gv := s.Resolve(s.Config.ActionGetter.Key, s.GetAll())
 
 	value := s.Resolve(s.Config.ActionSetter.Value, s.GetAll())
@@ -29,21 +29,25 @@ func (s *Setter) Configure() (err tailsafe.ErrActionInterface) {
 	return
 }
 
-func (s *Setter) GetResult() any {
+func (s *Set) GetResult() any {
 	return s.Config
 }
 
-func (s *Setter) Execute() (err tailsafe.ErrActionInterface) {
+func (s *Set) Execute() (err tailsafe.ErrActionInterface) {
 	return
 }
-func (s *Setter) GetConfig() any {
+
+func (s *Set) GetConfig() any {
 	return &s.Config
 }
-func (s *Setter) SetPayload(data tailsafe.DataInterface) {
+
+func (s *Set) SetPayload(data tailsafe.DataInterface) {
 	s.DataInterface = data
 }
+
 func New(step tailsafe.StepInterface) tailsafe.ActionInterface {
-	p := new(Setter)
+	p := new(Set)
 	p.StepInterface = step
+	p.Config = new(Config)
 	return p
 }

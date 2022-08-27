@@ -1,4 +1,4 @@
-package printAction
+package printfAction
 
 import (
 	"errors"
@@ -13,7 +13,7 @@ type Config struct {
 	Values []any  `yaml:"values"`
 }
 
-type PrintAction struct {
+type PrintfAction struct {
 	tailsafe.DataInterface
 	tailsafe.StepInterface
 	Config *Config
@@ -22,14 +22,14 @@ type PrintAction struct {
 	result string
 }
 
-func (pa *PrintAction) Configure() (err tailsafe.ErrActionInterface) {
+func (pa *PrintfAction) Configure() (err tailsafe.ErrActionInterface) {
 	if strings.TrimSpace(pa.Config.Format) == "" {
-		return tailsafe.CatchStackTrace(pa.GetContext(), errors.New("PrintAction: Format cannot be empty"))
+		return tailsafe.CatchStackTrace(pa.GetContext(), errors.New("PrintfAction: Format cannot be empty"))
 	}
 	return
 }
 
-func (pa *PrintAction) Execute() (err tailsafe.ErrActionInterface) {
+func (pa *PrintfAction) Execute() (err tailsafe.ErrActionInterface) {
 	for k, value := range pa.Config.Values {
 		v, ok := value.(string)
 		if !ok {
@@ -41,17 +41,17 @@ func (pa *PrintAction) Execute() (err tailsafe.ErrActionInterface) {
 	modules.GetEventsModule().Trigger(tailsafe.NewActionStdoutEvent(pa.StepInterface, fmt.Sprintf(pa.Config.Format, pa.Config.Values...), pa.GetChildLevel()))
 	return
 }
-func (pa *PrintAction) GetResult() interface{} {
+func (pa *PrintfAction) GetResult() interface{} {
 	return pa.result
 }
-func (pa *PrintAction) GetConfig() interface{} {
+func (pa *PrintfAction) GetConfig() interface{} {
 	return pa.Config
 }
-func (pa *PrintAction) SetPayload(data tailsafe.DataInterface) {
+func (pa *PrintfAction) SetPayload(data tailsafe.DataInterface) {
 	pa.DataInterface = data
 }
 func New(step tailsafe.StepInterface) tailsafe.ActionInterface {
-	p := new(PrintAction)
+	p := new(PrintfAction)
 	p.StepInterface = step
 	p.Config = new(Config)
 	return p

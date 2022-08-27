@@ -3,7 +3,7 @@ package modules
 import (
 	"errors"
 	"github.com/stretchr/testify/assert"
-	"github.com/tailsafe/tailsafe/pkg/tailsafe"
+	"github.com/tailsafe/tailsafe/internal/tailsafe/data"
 	"log"
 	"testing"
 	"time"
@@ -25,14 +25,14 @@ func TestAsyncQueue(t *testing.T) {
 }
 
 func TestAsyncQueue_WaitAll(t *testing.T) {
-	payload := tailsafe.NewPayload()
-	fn1 := func(p *tailsafe.Payload) func() error {
+	payload := data.NewPayload()
+	fn1 := func(p *data.Payload) func() error {
 		return func() error {
 			p.Set("fn1", "ok")
 			return nil
 		}
 	}
-	fn2 := func(p *tailsafe.Payload) func() error {
+	fn2 := func(p *data.Payload) func() error {
 		return func() error {
 			p.Set("fn2", "ok")
 			return nil

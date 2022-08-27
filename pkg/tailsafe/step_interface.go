@@ -25,7 +25,9 @@ type StepInterface interface {
 	GetContext() context.Context
 	GetPayload() DataInterface
 	Next(payload DataInterface) ErrActionInterface
+
 	Resolve(path string, data map[string]any) any
+
 	IsAsync() bool
 
 	/* Public Setters */

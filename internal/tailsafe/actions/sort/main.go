@@ -2,6 +2,7 @@ package sortAction
 
 import (
 	"errors"
+	"github.com/tailsafe/tailsafe/internal/tailsafe/data"
 	"github.com/tailsafe/tailsafe/pkg/tailsafe"
 	"golang.org/x/exp/slices"
 )
@@ -46,13 +47,13 @@ func (s *Sort) Execute() (err tailsafe.ErrActionInterface) {
 			return false
 		}
 
-		payload := tailsafe.NewPayload()
+		payload := data.NewPayload()
 
 		for k, v := range s.GetAll() {
-			payload.Set(k, v)
+			payload.Set(k, v, true)
 		}
 
-		payload.Set(s.Config.ActionSetter.Key, map[string]interface{}{"a": i, "b": j})
+		payload.Set(s.Config.ActionSetter.Key, map[string]interface{}{"a": i, "b": j}, s.Config.ActionSetter.Override)
 
 		err = s.Next(payload)
 

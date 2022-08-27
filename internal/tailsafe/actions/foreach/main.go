@@ -1,6 +1,7 @@
 package foreachAction
 
 import (
+	"github.com/tailsafe/tailsafe/internal/tailsafe/data"
 	"github.com/tailsafe/tailsafe/pkg/tailsafe"
 	"reflect"
 )
@@ -34,11 +35,11 @@ func (fa *ForeachAction) Execute() (err tailsafe.ErrActionInterface) {
 		return
 	}
 
-	payload := tailsafe.NewPayload()
+	payload := data.NewPayload()
 
 	// Inject current data into the payload
 	for k, v := range fa.GetAll() {
-		payload.Set(k, v)
+		payload.Set(k, v, true)
 	}
 
 	if rf.Kind() != reflect.Slice {
@@ -48,11 +49,11 @@ func (fa *ForeachAction) Execute() (err tailsafe.ErrActionInterface) {
 	for i := 0; i < rf.Len(); i++ {
 
 		if fa.Config.ActionSetters.Key != "" {
-			payload.Set(fa.Config.ActionSetters.Key, i)
+			payload.Set(fa.Config.ActionSetters.Key, i, fa.Config.ActionSetters.Override)
 		}
 
 		if fa.Config.ActionSetters.Value != "" {
-			payload.Set(fa.Config.ActionSetters.Value, rf.Index(i).Interface())
+			payload.Set(fa.Config.ActionSetters.Value, rf.Index(i).Interface(), fa.Config.ActionSetters.Override)
 		}
 
 		err := fa.Next(payload)
